@@ -1,6 +1,9 @@
-import React from 'react'
-import styles from './styles.module.css'
+import hachage from './hachage.js'
+import validateurMessage from './validateurMessage.js'
+import chiffrage from './chiffrage.js'
+import idmg from './idmg.js'
+import formatteurMessage from './formatteurMessage.js'
+import forgecommon from './forgecommon.js'
+import cryptoForge from './cryptoForge.js'
 
-export const ExampleComponent = ({ text }) => {
-  return <div className={styles.test}>Example Component: {text}</div>
-}
+export default { chiffrage, cryptoForge, forgecommon, formatteurMessage, hachage, idmg, validateurMessage }

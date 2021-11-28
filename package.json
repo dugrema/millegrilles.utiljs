@@ -1,6 +1,6 @@
 {
   "name": "millegrilles.utiljs",
-  "version": "1.0.0",
+  "version": "2021.1.0",
   "description": "Javascript commun pour projets MilleGrilles (client, serveur)",
   "author": "dugrema",
   "license": "MIT",
@@ -23,11 +23,7 @@
     "predeploy": "cd example && npm install && npm run build",
     "deploy": "gh-pages -d example/build"
   },
-  "peerDependencies": {
-    "react": "^16.0.0"
-  },
   "devDependencies": {
-    "microbundle-crl": "^0.13.10",
     "babel-eslint": "^10.0.3",
     "cross-env": "^7.0.2",
     "eslint": "^6.8.0",
@@ -41,13 +37,22 @@
     "eslint-plugin-react": "^7.17.0",
     "eslint-plugin-standard": "^4.0.1",
     "gh-pages": "^2.2.0",
+    "microbundle-crl": "^0.13.10",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.0.4",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
-    "react-scripts": "^3.4.1"
+    "prettier": "^2.0.4"
   },
   "files": [
     "dist"
-  ]
+  ],
+  "peerDependencies": {
+    "base-58": "^0.0.1",
+    "json-stable-stringify": "^1.0.1",
+    "multibase": "^4.0.6",
+    "multihashes": "^4.0.3",
+    "node-forge": "^0.10.0",
+    "zlib": "^1.0.5"
+  },
+  "dependencies": {
+    "uuid": "^8.3.2"
+  }
 }
