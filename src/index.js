@@ -5,5 +5,6 @@ import idmg from './idmg.js'
 import formatteurMessage from './formatteurMessage.js'
 import forgecommon from './forgecommon.js'
 import cryptoForge from './cryptoForge.js'
+import constantes from './constantes.js'
 
-export default { chiffrage, cryptoForge, forgecommon, formatteurMessage, hachage, idmg, validateurMessage }
+export default { chiffrage, constantes, cryptoForge, forgecommon, formatteurMessage, hachage, idmg, validateurMessage }
