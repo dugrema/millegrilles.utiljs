@@ -3,7 +3,6 @@ import {random as forgeRandom, cipher as forgeCipher, util as forgeUtil, pki as 
 import stringify from 'json-stable-stringify'
 import unzip from 'zlib'
 
-// const { extraireExtensionsMillegrille } = require('./forgecommon')
 import {hacher, Hacheur, hacherCertificat} from './hachage'
 
 // Charger subtle si disponible dans le navigateur
@@ -486,7 +485,6 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
       console.error("Erreur chargement PEM : %O\nPEM---\n%O\nFIN PEM---", e, pem)
       throw e
     }
-    // const extensions = extraireExtensionsMillegrille(certForge)
     const publicKey = certForge.publicKey
     const fingerprint = await hacherCertificat(certForge)
 
