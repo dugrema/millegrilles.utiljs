@@ -6,6 +6,7 @@
 import debugLib from 'debug'
 import stringify from 'json-stable-stringify'
 import multibase from 'multibase'
+import { util as forgeUtil, pss as forgePss, md as forgeMd, mgf as forgeMgf } from 'node-forge'
 
 import {verifierHachage, calculerDigest} from './hachage'
 
