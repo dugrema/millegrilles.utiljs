@@ -108,14 +108,14 @@ export function dechiffrer(ciphertext, password, iv, tag) {
 
 }
 
-function dechiffrerForge(ciphertext, password, iv, tag) {
+export function dechiffrerForge(ciphertext, password, iv, tag) {
   const decipher = creerDecipher(password, iv, tag)
   var output = decipher.update(ciphertext)
   const outputFinishBlock = decipher.finish()
   return Buffer.concat([output, outputFinishBlock])
 }
 
-async function dechiffrerSubtle(ciphertext, password, iv, tag) {
+export async function dechiffrerSubtle(ciphertext, password, iv, tag) {
   const ivArray = multibase.decode(iv)
   const tagArray = multibase.decode(tag)
 
@@ -651,20 +651,20 @@ export async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   return secretContent
 }
 
-function getRandomValues(randomBytes) {
+export function getRandomValues(randomBytes) {
   return _getRandomValues(randomBytes)
 }
 
-export default {
-  detecterSubtle,
-  getRandomValues,
-  chiffrer, dechiffrer,
-  chiffrerForge, dechiffrerForge, chiffrerSubtle, dechiffrerSubtle,
-  creerCipher, creerDecipher,
-  chiffrerCleSecreteSubtle, dechiffrerCleSecreteSubtle,
-  importerClePubliqueSubtle, importerClePriveeSubtle,
-  chiffrerCleSecreteForge, dechiffrerCleSecreteForge,
-  chiffrerDocument, dechiffrerDocument,
-  preparerCommandeMaitrecles, dechiffrerDocumentAvecMq,
-  preparerCleSecreteSubtle,
-}
+// export default {
+//   detecterSubtle,
+//   getRandomValues,
+//   chiffrer, dechiffrer,
+//   chiffrerForge, dechiffrerForge, chiffrerSubtle, dechiffrerSubtle,
+//   creerCipher, creerDecipher,
+//   chiffrerCleSecreteSubtle, dechiffrerCleSecreteSubtle,
+//   importerClePubliqueSubtle, importerClePriveeSubtle,
+//   chiffrerCleSecreteForge, dechiffrerCleSecreteForge,
+//   chiffrerDocument, dechiffrerDocument,
+//   preparerCommandeMaitrecles, dechiffrerDocumentAvecMq,
+//   preparerCleSecreteSubtle,
+// }
