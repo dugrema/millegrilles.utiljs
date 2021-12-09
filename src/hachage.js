@@ -13,7 +13,7 @@ function detecterSubtle() {
 const _subtle = detecterSubtle()
 
 export async function hacher(valeur, opts) {
-  if(!opts) opts = {}
+  opts = opts || {}
   const hashingCode = opts.hashingCode || 'sha2-512'
   const encoding = opts.encoding || 'base58btc'
 

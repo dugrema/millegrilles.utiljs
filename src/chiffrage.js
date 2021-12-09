@@ -272,7 +272,7 @@ export function creerDecipher(password, iv, tag) {
 export function chiffrerCleSecreteForge(clePublique, cleSecrete, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
-  // if(DEBUG) console.debug("Cle publique : %O, cle secrete : %O, opts: %O", clePublique, cleSecrete, opts)
+  if(DEBUG) console.debug("Cle publique : %O, cle secrete : %O, opts: %O", clePublique, cleSecrete, opts)
 
   const algorithm = opts.algorithm || 'RSA-OAEP',
         hashFunction = opts.hashFunction || 'SHA-256'
@@ -290,7 +290,7 @@ export function chiffrerCleSecreteForge(clePublique, cleSecrete, opts) {
 export async function chiffrerCleSecreteSubtle(clePublique, cleSecrete, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
-  // if(DEBUG) console.debug("Cle publique : %O, cle secrete : %O, opts: %O", clePublique, cleSecrete, opts)
+  if(DEBUG) console.debug("Cle publique : %O, cle secrete : %O, opts: %O", clePublique, cleSecrete, opts)
 
   const algorithm = opts.algorithm || 'RSA-OAEP',
         hashFunction = opts.hashFunction || 'SHA-256'
@@ -430,7 +430,7 @@ export function importerClePriveeSubtle(clePrivee, opts) {
 
 export function importerClePubliqueSubtle(clePublique, opts) {
   opts = opts || {}
-  const usage = opts.usage || ['encrypt']
+  const usage = opts.usage || ['encrypt'],
         DEBUG = opts.DEBUG
 
   const algorithm = opts.algorithm || 'RSA-OAEP',
@@ -442,7 +442,7 @@ export function importerClePubliqueSubtle(clePublique, opts) {
   }
 
   const regEx = /\n?\-{5}[A-Z ]+\-{5}\n?/g
-  clePubliqueString = clePubliquePem.replaceAll(regEx, '')
+  const clePubliqueString = clePubliquePem.replaceAll(regEx, '')
   if(DEBUG) console.debug("Cle public string extraite du format nodeforge : %s", clePubliqueString)
 
   const clePubliqueBuffer = Buffer.from(clePubliqueString, 'base64')
@@ -461,6 +461,8 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
   opts = opts || {}
   const DEBUG = opts.DEBUG,
         format = opts.format || 'mgs2'
+
+  if(DEBUG) console.debug("preparerCommandeMaitrecles PEM : %O", certificatsPem)
 
   // Verifier elements obligatoires
   if(typeof(domaine) !== 'string') throw new Error(`Domaine mauvais format ${domaine}`)
