@@ -14,14 +14,14 @@ const VERSION_SIGNATURE = 0x1
 
 const {subtle: _subtle} = detecterSubtle()
 
-function splitPEMCerts(certs) {
+export function splitPEMCerts(certs) {
   var splitCerts = certs.split(BEGIN_CERTIFICATE).map(c=>{
     return (BEGIN_CERTIFICATE + c).trim()
   })
   return splitCerts.slice(1)
 }
 
-function hacherMessage(message) {
+export function hacherMessage(message) {
 
   // Copier le message sans l'entete
   const copieMessage = {}
@@ -41,7 +41,7 @@ function hacherMessage(message) {
 
 }
 
-class FormatteurMessage {
+export class FormatteurMessage {
 
   constructor(chainePem, cle) {
     if( typeof(chainePem) === 'string' ) {
@@ -49,6 +49,8 @@ class FormatteurMessage {
     } else {
       this.chainePem = chainePem
     }
+
+    this.err = ''
 
     // Charger une instance de certificat
     this.cert = forgePki.certificateFromPem(this.chainePem[0])
@@ -84,6 +86,9 @@ class FormatteurMessage {
     Promise.all(promisesInit).then(_=>{
       this._promisesInit = null
       this._ready = true
+    }).catch(err=>{
+      console.error("FormatteurMessage Erreur initialisation signateur : %O", err)
+      this.err = err
     })
   }
 
@@ -100,6 +105,9 @@ class FormatteurMessage {
   }
 
   async formatterMessage(message, domaineAction, opts) {
+    if(!this.fingerprint) throw new Error("formatteurMessage.formatterMessage Certificat n'est pas initialise")
+    if(this.err) throw new Error("Erreur initialisation FormatteurMessage : %O", this.err)
+
     // Formatte le message
     var messageCopy = {...message}
 
@@ -151,7 +159,7 @@ class FormatteurMessage {
   }
 }
 
-class FormatteurMessageSubtle extends FormatteurMessage {
+export class FormatteurMessageSubtle extends FormatteurMessage {
 
   // Override avec signateur subtle
   async initialiserSignateur(cle) {
@@ -160,7 +168,7 @@ class FormatteurMessageSubtle extends FormatteurMessage {
 
 }
 
-class SignateurMessage {
+export class SignateurMessage {
 
   constructor(pemCle) {
     this.cle = forgePki.privateKeyFromPem(pemCle)
@@ -207,13 +215,14 @@ class SignateurMessage {
 
 }
 
-class SignateurMessageSubtle {
+export class SignateurMessageSubtle {
 
   constructor(cleSubtle) {
     this.cle = cleSubtle
   }
 
   async signer(message) {
+
     const copieMessage = {}
     for(let key in message) {
       if ( ! key.startsWith('_') ) {
