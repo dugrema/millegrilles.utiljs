@@ -43,7 +43,8 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "res"
   ],
   "peerDependencies": {
     "base-58": "^0.0.1",
