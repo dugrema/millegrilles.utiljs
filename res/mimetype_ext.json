@@ -381,6 +381,7 @@
 	"video/dl": "dl",
 	"video/fli": "fli",
 	"video/gl": "gl",
+	"video/mp4": "mp4",
 	"video/mpeg": "mpeg",
 	"video/msvideo": "avi",
 	"video/quicktime": "mov",
