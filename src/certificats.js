@@ -19,30 +19,20 @@ Genere une nouvelle cle privee EdDSA25519
 Parametres opts :
   - password str: Chiffre la cle privee, retournee dans pemChiffre
 */
-export async function genererClePrivee(opts) {
+export function genererClePrivee(opts) {
     opts = opts || {}
     const password = opts.password
 
-    const keyPair = await new Promise((resolve, reject)=>crypto.generateKeyPair(
-        'ed25519', 
-        {}, 
-        (err, publicKey, privateKey)=>{
-            if(err) return reject(err)
-            resolve({publicKey, privateKey})
-        }
-    ))
-    const publicKeyGenereePem = keyPair.publicKey.export({type: 'spki', format: 'pem'})
-
-    const privateKeyGenereePem = keyPair.privateKey.export({type: 'pkcs8', format: 'pem'})
+    const keyPair = ed25519.generateKeyPair();
 
     const resultat = {
-        pemPublic: publicKeyGenereePem,
-        pemPrive: privateKeyGenereePem,
+        // pemPublic: publicKeyGenereePem,
+        // pemPrive: privateKeyGenereePem,
         ...keyPair,
     }
 
     if(password) {
-        resultat.pemChiffre = keyPair.privateKey.export({type: 'pkcs8', format: 'pem', cipher: 'aes-128-cbc', passphrase: password})
+        resultat.pemChiffre = encryptPrivateKey(keyPair.privateKey, password)
     }
 
     return resultat
@@ -177,79 +167,68 @@ export async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
 
   const {privateKey, publicKey} = chargerPemClePriveeEd25519(clePriveePEM)
 
-  debug("Extraction nouvelles cles\nPublique: %O\nPrivee: %O", publicKey, privateKey)
+  // Creer la CSR
+  const csr = pki.createCertificationRequest()
 
-    // Creer la CSR
-    const csr = pki.createCertificationRequest()
-    debug("Nouveau CSR : %O", csr)
+  csr.publicKey = publicKey
 
-    csr.publicKey = publicKey
+  var attrs = [{
+    name: 'commonName',
+    value: nomUsager
+  }]
+  csr.setSubject(attrs)
 
-    var attrs = [{
-      name: 'commonName',
-      value: nomUsager
-    }]
-    csr.setSubject(attrs)
-  
-    var extensions = []
-  
-    if(userId) {
-      // Ajouter l'extension userId
-      extensions.push({
-        id: OID_UISERID,  // custom userId pour MilleGrilles
-        value: userId,
-      })
-    }
-  
-    if(extensions.length > 0) {
-      csr.setAttributes([
-        {name: 'extensionRequest', extensions}
-      ])
-    }
-  
-    // Signer requete
-    csr.sign(privateKey)
-  
-    // Exporter sous format PEM
-    const csrPem = pki.certificationRequestToPem(csr)
+  var extensions = []
 
-    return csrPem
+  if(userId) {
+    // Ajouter l'extension userId
+    extensions.push({
+      id: OID_UISERID,  // custom userId pour MilleGrilles
+      value: userId,
+    })
+  }
+
+  if(extensions.length > 0) {
+    csr.setAttributes([
+      {name: 'extensionRequest', extensions}
+    ])
+  }
+
+  // Signer requete
+  csr.sign(privateKey)
+
+  // Exporter sous format PEM
+  const csrPem = pki.certificationRequestToPem(csr)
+
+  return csrPem
 }
 
 export function chargerPemClePriveeEd25519(pem, opts) {
   opts = opts || {}
 
+  let key
   if(opts.password) {
     // Dechiffrer la cle privee
-    const key = crypto.createPrivateKey({
-      key: pem,
-      passphrase: opts.password,
-    })
-    pem = key.export({type: 'pkcs8', format: 'pem'})
+    key = decryptPrivateKey(pem, opts.password)
+  } else {
+    key = ed25519.privateKeyFromPem(pem)
   }
 
-  const privateKeyInfo = PrivateKey.fromPEM(pem),
-        privateKeyBytes = new Uint8Array(privateKeyInfo.keyRaw),
-        publicKeyBytes = new Uint8Array(privateKeyInfo.publicKeyRaw)
+  return key
+}
 
-  // Preparer structure cle privee pour signature
-  const privateKey = {
-    privateKeyBytes: privateKeyBytes,
-    keyType: forgeOids.EdDSA25519,
-    sign: message => {
-      return ed25519.sign({
-        privateKey: privateKeyBytes, 
-        encoding: 'binary', 
-        message
-      }).toString('binary')
-    }
-  }
-  
-  // Cle publique (sans verify)
-  const publicKey = {
-    publicKeyBytes: publicKeyBytes,
-    keyType: forgeOids.EdDSA25519,
-  }
+function encryptPrivateKey(key, password) {
+  const asn1Key = ed25519.privateKeyToAsn1(key)
+  var encryptedPrivateKeyInfo = pki.encryptPrivateKeyInfo(
+    asn1Key, 
+    password, 
+    { algorithm: 'aes256' }
+  )
+  return pki.encryptedPrivateKeyToPem(encryptedPrivateKeyInfo)
+}
 
-  return {privateKey, publicKey}
+function decryptPrivateKey(pem, password) {
+  const cleWrappee = pki.encryptedPrivateKeyFromPem(pem)
+  const cleAsn1 = pki.decryptPrivateKeyInfo(cleWrappee, password)
+  return ed25519.privateKeyFromAsn1(cleAsn1)
 }
