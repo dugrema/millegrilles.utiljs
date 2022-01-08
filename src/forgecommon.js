@@ -1,16 +1,9 @@
 import debugLib from 'debug'
 
-//const crypto = require('crypto')
-// const {pki, md, asn1, pss, mgf, util} = require('node-forge')
 import { pki } from 'node-forge'
-// import base58 from 'base-58'
 import stringify from 'json-stable-stringify'
-// import {v4 as uuidv4} from 'uuid'
-// import multibase from 'multibase'
-// import multihash from 'multihashes'
 
 import {hacher} from './hachage'
-// import {hacherCertificat} from './formatteurMessage'
 import {verifierIdmg, getIdmg} from './idmg'
 
 const debug = debugLib('millegrilles:forgecommon')

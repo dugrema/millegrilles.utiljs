@@ -55,5 +55,8 @@
     "node-forge": "^1.0.0",
     "uuid": "^8.3.2",
     "zlib": "^1.0.5"
+  },
+  "dependencies": {
+    "@fidm/x509": "^1.2.1"
   }
 }

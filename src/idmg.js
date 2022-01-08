@@ -1,4 +1,4 @@
-import {pki, md, asn1, util} from 'node-forge'
+import {pki, md, asn1, util} from '@dugrema/node-forge'
 import multihash from 'multihashes'
 import multibase from 'multibase'
 import base58 from 'base-58'

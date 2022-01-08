@@ -7,90 +7,97 @@ const JOUR_EPOCH_MS = 24 * 60 * 60 * 1000,     // Jour en ms : 24h * 60min * 60s
       CERT_COMPTE_SIMPLE_DUREE = 3 * 366 * JOUR_EPOCH_MS,  // 3 ans
       CERT_COMPTE_COMPLET_DUREE = 18 * 31 * JOUR_EPOCH_MS  // 18 mois
 
-// Genere un nouveau certificat de MilleGrille a partir d'un keypair
+// // Genere un nouveau certificat de MilleGrille a partir d'un keypair
 export async function genererCertificatMilleGrille(clePriveePEM, clePubliquePEM) {
-
-  // console.debug("Creation nouveau certificat de MilleGrille")
-  // console.debug("Cle Publique : %s", clePubliquePEM)
-
-  const clePublique = pki.publicKeyFromPem(clePubliquePEM)
-  const clePrivee = pki.privateKeyFromPem(clePriveePEM)
-
-  const cert = pki.createCertificate()
-  cert.publicKey = clePublique
-  cert.serialNumber = genererRandomSerial()
-  cert.validity.notBefore = new Date()
-  cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 20)
-
-  var attrs = [{
-    name: 'commonName',
-    value: 'MilleGrille'
-  }]
-  cert.setSubject(attrs)
-  cert.setIssuer(attrs)  // Self, genere un certificat self-signed (racine)
-  cert.setExtensions([{
-    name: 'basicConstraints',
-    critical: true,
-    cA: true,
-    pathLenConstraint: 5,
-  }, {
-    name: 'keyUsage',
-    keyCertSign: true,
-    digitalSignature: true,
-    nonRepudiation: true,
-    keyEncipherment: true,
-    dataEncipherment: false
-  }, {
-    name: 'subjectKeyIdentifier'
-  }, {
-    name: 'authorityKeyIdentifier',
-    keyIdentifier: true,
-  }])
-
-  // Signer certificat
-  // cert.md = md.sha512.create()
-  await cert.sign(clePrivee, md.sha512.create())
-
-  // Exporter sous format PEM
-  var pem = pki.certificateToPem(cert)
-
-  var idmg = await encoderIdmg(pem)
-
-  return {cert, pem, idmg}
-
+  throw new Error("deprecated")
 }
 
-// Genere une requete de signature pour un certificat intermediaire
-// Permet de faire signer un navigateur avec une cle de MilleGrille cote client
-// Note : ne pas utiliser sur navigateur (trop lent)
+//   // console.debug("Creation nouveau certificat de MilleGrille")
+//   // console.debug("Cle Publique : %s", clePubliquePEM)
+
+//   const clePublique = pki.publicKeyFromPem(clePubliquePEM)
+//   const clePrivee = pki.privateKeyFromPem(clePriveePEM)
+
+//   const cert = pki.createCertificate()
+//   cert.publicKey = clePublique
+//   cert.serialNumber = genererRandomSerial()
+//   cert.validity.notBefore = new Date()
+//   cert.validity.notAfter.setFullYear(cert.validity.notBefore.getFullYear() + 20)
+
+//   var attrs = [{
+//     name: 'commonName',
+//     value: 'MilleGrille'
+//   }]
+//   cert.setSubject(attrs)
+//   cert.setIssuer(attrs)  // Self, genere un certificat self-signed (racine)
+//   cert.setExtensions([{
+//     name: 'basicConstraints',
+//     critical: true,
+//     cA: true,
+//   }, {
+//     name: 'keyUsage',
+//     keyCertSign: true,
+//     digitalSignature: true,
+//     nonRepudiation: true,
+//     keyEncipherment: true,
+//     dataEncipherment: false
+//   }, {
+//     name: 'subjectKeyIdentifier'
+//   }, {
+//     name: 'authorityKeyIdentifier',
+//     keyIdentifier: true,
+//   }])
+
+//   // Signer certificat
+//   // cert.md = md.sha512.create()
+//   await cert.sign(clePrivee, md.sha512.create())
+
+//   // Exporter sous format PEM
+//   var pem = pki.certificateToPem(cert)
+
+//   var idmg = await encoderIdmg(pem)
+
+//   return {cert, pem, idmg}
+
+// }
+
+// // Genere une requete de signature pour un certificat intermediaire
+// // Permet de faire signer un navigateur avec une cle de MilleGrille cote client
+// // Note : ne pas utiliser sur navigateur (trop lent)
 export function genererCSRIntermediaire(opts) {
-  if(!opts) opts = {}
-
-  console.debug("Creation nouveau CSR intermediaire, key pair")
-  const keys = pki.rsa.generateKeyPair(2048)
-
-  const csr = pki.createCertificationRequest()
-
-  csr.publicKey = keys.publicKey
-
-  const clePrivee = opts.clePrivee || keys.privateKey
-
-  // Signer requete
-  csr.sign(clePrivee)
-
-  // Exporter sous format PEM
-  const csrPem = pki.certificationRequestToPem(csr)
-  const clePriveePem = pki.privateKeyToPem(clePrivee)
-
-  return {clePriveePem, csrPem}
-
+  throw new Error("deprecated")
 }
+
+//   if(!opts) opts = {}
+
+//   console.debug("Creation nouveau CSR intermediaire, key pair")
+//   const keys = pki.rsa.generateKeyPair(2048)
+
+//   const csr = pki.createCertificationRequest()
+
+//   csr.publicKey = keys.publicKey
+
+//   const clePrivee = opts.clePrivee || keys.privateKey
+
+//   // Signer requete
+//   csr.sign(clePrivee)
+
+//   // Exporter sous format PEM
+//   const csrPem = pki.certificationRequestToPem(csr)
+//   const clePriveePem = pki.privateKeyToPem(clePrivee)
+
+//   return {clePriveePem, csrPem}
+
+// }
 
 export function genererKeyPair() {
-  const keypair = pki.rsa.generateKeyPair(2048)
-  const clePubliquePEM = pki.publicKeyToPem(keypair.publicKey)
-  return {clePrivee: keypair.privateKey, clePublique: keypair.publicKey, clePubliquePEM}
+  throw new Error("deprecated")
 }
+
+//   const keypair = pki.rsa.generateKeyPair(2048)
+//   const clePubliquePEM = pki.publicKeyToPem(keypair.publicKey)
+//   return {clePrivee: keypair.privateKey, clePublique: keypair.publicKey, clePubliquePEM}
+// }
 
 // Genere un nouveau certificat de MilleGrille a partir d'un keypair
 // cleSignateur : peut etre une cle privee Forge ou Subtle (type sign)

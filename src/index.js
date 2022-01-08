@@ -34,3 +34,5 @@ export {
 }
 
 export { constantes, cryptoForge, forgecommon, formatteurMessage, hachage, idmg, validateurMessage }
+
+export * from './certificats'
