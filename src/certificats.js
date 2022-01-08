@@ -7,6 +7,8 @@ import { encoderIdmg } from './idmg'
 
 const debug = debugLib("utiljs:certificats")
 
+const OID_UISERID = '1.2.3.4.3'
+
 const JOUR_EPOCH_MS = 24 * 60 * 60 * 1000,     // Jour en ms : 24h * 60min * 60secs * 1000ms
       CERT_NAV_DUREE = 6 * 7 * JOUR_EPOCH_MS,  // 6 semaines (6 * 7 jours)
       CERT_COMPTE_SIMPLE_DUREE = 3 * 366 * JOUR_EPOCH_MS,  // 3 ans
@@ -93,6 +95,74 @@ export async function genererCertificatMilleGrille(clePriveePEM) {
   return {cert, pem, idmg}
 }
 
+/*
+  Genere un nouveau certificat intermediaire
+  Parametres:
+    - pemCsr str: PEM du CSR fourni par l'instance (certissuer)
+    - pemRacine str: PEM du certificat racine de la MilleGrille
+    - cleRacine obj: Cle privee avec function sign(bytes)
+*/
+export async function genererCertificatIntermediaire(pemCsr, pemRacine, cleRacine) {
+  // Lire et verifier signature du CSR
+  const csr = pki.certificationRequestFromPem(pemCsr)
+  if(!csr.verify()) throw new Error("CSR invalide")
+
+  const idmg = await encoderIdmg(pemRacine)
+  const certificatRacine = pki.certificateFromPem(pemRacine)
+  
+  const cert = pki.createCertificate()
+  cert.publicKey = csr.publicKey
+  const commonName = csr.subject.getField('CN').value
+
+  cert.serialNumber = genererRandomSerial()
+  cert.validity.notBefore = new Date()
+  const expiration = cert.validity.notBefore.getTime() + CERT_COMPTE_COMPLET_DUREE
+  cert.validity.notAfter = new Date(expiration)
+
+  const akid = certificatRacine.generateSubjectKeyIdentifier().getBytes()
+
+  const attrs = [
+    {
+      name: 'commonName',
+      value: commonName
+    },{
+      name: 'organizationName',
+      value: idmg
+    }
+  ]
+  cert.setSubject(attrs)
+
+  cert.setIssuer(certificatRacine.subject.attributes)
+
+  cert.setExtensions([
+    {
+      name: 'basicConstraints',
+      critical: true,
+      cA: true,
+      pathLenConstraint: 0,
+    }, {
+      name: 'keyUsage',
+      keyCertSign: true,
+      cRLSign: true,
+    },
+    {
+      name: 'subjectKeyIdentifier',
+    }, 
+    {
+      name: 'authorityKeyIdentifier',
+      keyIdentifier: akid,
+    }
+  ])
+
+  // Signer certificat
+  cert.sign(cleRacine)
+
+  // Exporter sous format PEM
+  const pem = pki.certificateToPem(cert)
+
+  return pem
+}
+
 /* 
 Genere un CSR pour le navigateur - va etre signe par le certissuer 
 Params:
@@ -126,7 +196,7 @@ export async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
     if(userId) {
       // Ajouter l'extension userId
       extensions.push({
-        id: '1.2.3.4.3',  // custom userId pour MilleGrilles
+        id: OID_UISERID,  // custom userId pour MilleGrilles
         value: userId,
       })
     }
