@@ -18,12 +18,14 @@ const JOUR_EPOCH_MS = 24 * 60 * 60 * 1000,     // Jour en ms : 24h * 60min * 60s
 Genere une nouvelle cle privee EdDSA25519
 Parametres opts :
   - password str: Chiffre la cle privee, retournee dans pemChiffre
+  - dechiffre bool: True pour produire la cle dechiffree meme si password fourni
 */
 export function genererClePrivee(opts) {
     opts = opts || {}
-    const password = opts.password
+    const password = opts.password,
+          dechiffre = opts.dechiffre
 
-    const keyPair = ed25519.generateKeyPair();
+    const keyPair = ed25519.generateKeyPair()
 
     const resultat = {
         // pemPublic: publicKeyGenereePem,
@@ -33,6 +35,12 @@ export function genererClePrivee(opts) {
 
     if(password) {
         resultat.pemChiffre = encryptPrivateKey(keyPair.privateKey, password)
+
+        if(dechiffre === true) {
+          resultat.pem = ed25519.privateKeyToPem(keyPair.privateKey)
+        }
+    } else {
+      resultat.pem = ed25519.privateKeyToPem(keyPair.privateKey)
     }
 
     return resultat
@@ -41,7 +49,8 @@ export function genererClePrivee(opts) {
 // Genere un nouveau certificat de MilleGrille a partir d'un keypair
 export async function genererCertificatMilleGrille(clePriveePEM) {
 
-  const {privateKey, publicKey} = chargerPemClePriveeEd25519(clePriveePEM)
+  const privateKey = chargerPemClePriveeEd25519(clePriveePEM)
+  const publicKey = publicKeyFromPrivateKey(privateKey.privateKeyBytes)
 
   const cert = pki.createCertificate()
   cert.publicKey = publicKey
@@ -165,7 +174,8 @@ export async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
   opts = opts || {}
   const userId = opts.userId
 
-  const {privateKey, publicKey} = chargerPemClePriveeEd25519(clePriveePEM)
+  const privateKey = chargerPemClePriveeEd25519(clePriveePEM)
+  const publicKey = publicKeyFromPrivateKey(privateKey.privateKeyBytes)
 
   // Creer la CSR
   const csr = pki.createCertificationRequest()
@@ -231,4 +241,10 @@ function decryptPrivateKey(pem, password) {
   const cleWrappee = pki.encryptedPrivateKeyFromPem(pem)
   const cleAsn1 = pki.decryptPrivateKeyInfo(cleWrappee, password)
   return ed25519.privateKeyFromAsn1(cleAsn1)
+}
+
+function publicKeyFromPrivateKey(privateKey) {
+  const privateKeyBytes = privateKey.privateKeyBytes || privateKey
+  var keyPair = ed25519.generateKeyPair({seed: privateKeyBytes})
+  return keyPair.publicKey
 }
