@@ -216,7 +216,18 @@ export async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
     return csrPem
 }
 
-function chargerPemClePriveeEd25519(pem) {
+export function chargerPemClePriveeEd25519(pem, opts) {
+  opts = opts || {}
+
+  if(opts.password) {
+    // Dechiffrer la cle privee
+    const key = crypto.createPrivateKey({
+      key: pem,
+      passphrase: opts.password,
+    })
+    pem = key.export({type: 'pkcs8', format: 'pem'})
+  }
+
   const privateKeyInfo = PrivateKey.fromPEM(pem),
         privateKeyBytes = new Uint8Array(privateKeyInfo.keyRaw),
         publicKeyBytes = new Uint8Array(privateKeyInfo.publicKeyRaw)
