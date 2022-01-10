@@ -1,7 +1,7 @@
 import debugLib from 'debug'
 import stringify from 'json-stable-stringify'
 import multibase from 'multibase'
-import {pki as forgePki, md as forgeMd, util as forgeUtil, mgf as forgeMgf, pss as forgePss} from 'node-forge'
+import {pki as forgePki, md as forgeMd, util as forgeUtil, mgf as forgeMgf, pss as forgePss} from '@dugrema/node-forge'
 import {v4 as uuidv4} from 'uuid'
 
 import {hacher, calculerDigest, hacherCertificat} from './hachage'

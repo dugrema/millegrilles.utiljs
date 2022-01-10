@@ -1,6 +1,6 @@
 import debugLib from 'debug'
 
-import { pki } from 'node-forge'
+import { pki } from '@dugrema/node-forge'
 import stringify from 'json-stable-stringify'
 
 import {hacher} from './hachage'

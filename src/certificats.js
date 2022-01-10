@@ -1,6 +1,4 @@
-import crypto from 'crypto'
-import { pki, ed25519, oids as forgeOids } from '@dugrema/node-forge'
-import { PrivateKey } from '@fidm/x509'
+import { pki, ed25519 } from '@dugrema/node-forge'
 import debugLib from 'debug'
 import { genererRandomSerial } from './forgecommon'
 import { encoderIdmg } from './idmg'

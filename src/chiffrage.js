@@ -1,5 +1,5 @@
 import multibase from 'multibase'
-import {random as forgeRandom, cipher as forgeCipher, util as forgeUtil, pki as forgePki, md as forgeMd} from 'node-forge'
+import {random as forgeRandom, cipher as forgeCipher, util as forgeUtil, pki as forgePki, md as forgeMd} from '@dugrema/node-forge'
 import stringify from 'json-stable-stringify'
 import unzip from 'zlib'
 
