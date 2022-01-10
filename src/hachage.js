@@ -161,16 +161,17 @@ export function comparerArraybuffers(buf1, buf2) {
     return true;
 }
 
+// Faire await sur .ready avant d'utiliser
 export class Hacheur {
   constructor(opts) {
     opts = opts || {}
     this.encoding = opts.encoding || 'base58btc'
-    this.hashingCode = opts.hash || 'blake2b-512'
+    this.hashingCode = opts.hashingCode || opts.hash || 'blake2b-512'
     this._digest = null
     this.mh = null
 
     const constructeur = _hacheurs[this.hashingCode]
-    this._digester = constructeur()
+    this.ready = constructeur().then(digester=>this._digester=digester)
 
     this._textEncoder = new TextEncoder()
   }
@@ -212,6 +213,7 @@ export class Hacheur {
   }
 }
 
+// Faire await .ready avant d'utiliser
 export class VerificateurHachage {
 
   constructor(hachage) {
@@ -223,7 +225,7 @@ export class VerificateurHachage {
     // const fonctionHachage = _mapFonctionHachageForge(hashingCode)
     // this._digester = fonctionHachage.create()
     const constructeur = _hacheurs[hashingCode]
-    this._digester = constructeur()
+    this.ready = constructeur().then(digester=>this._digester=digester)
     this._textEncoder = new TextEncoder()
   }
 
