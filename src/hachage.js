@@ -26,6 +26,13 @@ export function setHacheurs(hacheurs) {
 // }
 // const _subtle = detecterSubtle()
 
+/**
+ * Calcule le hachage du buffer, retourne le multihash encode sous forme de multibase (str).
+ * opts par defaut: hashingCode: 'blake2b-512', encoding: 'base58btc'
+ * @param {*} valeur Buffer en parametre
+ * @param {*} opts {hashingCode str, encoding str}
+ * @returns 
+ */
 export async function hacher(valeur, opts) {
   opts = opts || {}
   const hashingCode = opts.hashingCode || 'blake2b-512'
@@ -48,12 +55,12 @@ export async function hacher(valeur, opts) {
 }
 
 export async function calculerDigest(valeur, hashingCode) {
-  const hacheur = _hacheurs[hashingCode]
+  const hacheurConstructor = _hacheurs[hashingCode]
   let digest
-  if(hacheur) {
+  if(hacheurConstructor) {
+    const hacheur = hacheurConstructor()
     // Utiliser subtle dans le navigateur (native)
-    await hacheur.update(valeur)
-    digest = await hacheur.finalize()
+    digest = await hacheur.digest(valeur)
   } else {
     // Fallback sur node-forge
     digest = _calculerHachageForge(valeur, {hash: hashingCode})
@@ -121,16 +128,13 @@ export async function verifierHachage(hachageMultibase, valeur, opts) {
 
   const algo = mh.name
   const digest = mh.digest
-  const hacheur = _hacheurs[algo]
 
-  // Hacher la valeur
+  const hacheurConstructor = _hacheurs[algo]
   let digestCalcule
-  // if(_subtle && opts.forge !== true) {
-  //   // Utiliser subtle dans le navigateur (native)
-  //   digestCalcule = await _calculerHachageSubtle(valeur, {hash: algo})
-  if(hacheur) {
-    await hacheur.update(valeur)
-    digestCalcule = await hacheur.finalize()
+  if(hacheurConstructor) {
+    const hacheur = hacheurConstructor()
+    // Utiliser subtle dans le navigateur (native)
+    digestCalcule = await hacheur.digest(valeur)
   } else {
     // Fallback sur node-forge
     digestCalcule = _calculerHachageForge(valeur, {hash: algo})
@@ -165,33 +169,36 @@ export class Hacheur {
     this._digest = null
     this.mh = null
 
-    const fonctionHachage = _mapFonctionHachageForge(this.hashingCode)
-    this._digester = fonctionHachage.create()
+    const constructeur = _hacheurs[this.hashingCode]
+    this._digester = constructeur()
+
+    this._textEncoder = new TextEncoder()
   }
 
-  update(data) {
+  async update(data) {
     if(typeof(data) === 'string') {
-      data = forgeUtil.encodeUtf8(data)
+      // data = forgeUtil.encodeUtf8(data)
+      data = this._textEncoder.encode(data)
     } else {
       // Convertir AB vers byte string
-      data = forgeUtil.createBuffer(data, 'raw').getBytes()
+      // data = forgeUtil.createBuffer(data, 'raw').getBytes()
     }
-    this._digester.update(data)
+    await this._digester.update(data)
   }
 
-  digest() {
+  async digest() {
     if(this._digest) return this._digest
 
-    var resultatHachage = this._digester.digest().getBytes()
-    this._digest = Buffer.from(resultatHachage, 'binary')
+    this._digest = await this._digester.finalize()
+
     this._digester = null
     return this._digest
   }
 
-  finalize() {
+  async finalize() {
     if(this.mh) return this.mh
 
-    const digest = this.digest()
+    const digest = await this.digest()
     const digestView = new Uint8Array(digest)
 
     // Creer le multihash
@@ -213,31 +220,36 @@ export class VerificateurHachage {
 
     // Creer contexte de hachage
     const hashingCode = this.mh.name
-    const fonctionHachage = _mapFonctionHachageForge(hashingCode)
-    this._digester = fonctionHachage.create()
+    // const fonctionHachage = _mapFonctionHachageForge(hashingCode)
+    // this._digester = fonctionHachage.create()
+    const constructeur = _hacheurs[hashingCode]
+    this._digester = constructeur()
+    this._textEncoder = new TextEncoder()
   }
 
-  update(data) {
+  async update(data) {
     if(typeof(data) === 'string') {
-      data = forgeUtil.encodeUtf8(data)
+      // data = forgeUtil.encodeUtf8(data)
+      data = this._textEncoder.encode(data)
     } else {
       // Convertir AB vers byte string
-      data = forgeUtil.createBuffer(data, 'raw').getBytes()
+      // data = forgeUtil.createBuffer(data, 'raw').getBytes()
     }
-    this._digester.update(data)
+    await this._digester.update(data)
   }
 
-  digest() {
+  async digest() {
     if(this._digest) return this._digest
 
-    var resultatHachage = this._digester.digest().getBytes()
-    this._digest = Buffer.from(resultatHachage, 'binary')
+    this._digest = this._digester.finalize()
+    // var resultatHachage = this._digester.digest().getBytes()
+    // this._digest = Buffer.from(resultatHachage, 'binary')
     this._digester = null
     return this._digest
   }
 
-  verify() {
-    var digestCalcule = this.digest()
+  async verify() {
+    var digestCalcule = await this.digest()
     digestCalcule = new Uint8Array(digestCalcule)
 
     const digestRecu = this.mh.digest
@@ -256,10 +268,12 @@ export function hacherCertificat(cert) {
     cert = forgePki.certificateFromPem(cert)
   }
   const derBytes = forgeAsn1.toDer(forgePki.certificateToAsn1(cert)).getBytes()
-  const digest = new Uint8Array(Buffer.from(derBytes, 'binary'))
+  const certArray = new Uint8Array(Buffer.from(derBytes, 'binary'))
+
+  console.debug("!!! Hacher : %O, hacheurs disponibles : %O", certArray, Object.keys(_hacheurs))
 
   // Retourner promise
-  return hacher(digest, {hashingCode: 'blake2s-256'})
+  return hacher(certArray, {hashingCode: 'blake2s-256'})
 }
 
 // export function hacherPassword(password, iterations, salt) {

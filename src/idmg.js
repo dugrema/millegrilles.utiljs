@@ -2,26 +2,20 @@ import {pki, md, asn1, util} from '@dugrema/node-forge'
 import multihash from 'multihashes'
 import multibase from 'multibase'
 import base58 from 'base-58'
-import { base58btc } from 'multiformats/bases/base58'
-// import { blake2s256 } from '@multiformats/blake2/blake2s'
 
 import {calculerDigest, comparerArraybuffers} from './hachage'
 
-const VERSION_IDMG = 2
+const VERSION_IDMG = 2,
+      HASHING_CODE = 'blake2s-256'
 
 export async function encoderIdmg(pem, opts) {
   opts = opts || {}
 
   const cert = pki.certificateFromPem(pem)
-  // const certBuffer = new Uint8Array(Buffer.from(asn1.toDer(pki.certificateToAsn1(cert)).getBytes(), 'binary'))
-  const certBuffer = Buffer.from(asn1.toDer(pki.certificateToAsn1(cert)).getBytes(), 'binary')
+  const certBuffer = new Uint8Array(Buffer.from(asn1.toDer(pki.certificateToAsn1(cert)).getBytes(), 'binary'))
 
-  // console.debug("Cert Buffer : %O", certBuffer)
-  console.debug("!!! DIGESTING avec %O", blake2s256)
-  const digestView = await blake2s256.digest(certBuffer)
-  console.error("!!! digestView : %O", digestView)
-  // const digestView = await calculerDigest(certBuffer, hashingCode)
-  const mhValeur = multihash.encode(digestView, hashingCode)
+  const digestView = await calculerDigest(certBuffer, HASHING_CODE)
+  const mhValeur = multihash.encode(digestView, HASHING_CODE)
 
   // console.debug("DIGEST multihash : %O", mhValeur)
 
@@ -38,9 +32,12 @@ export async function encoderIdmg(pem, opts) {
   // Set multihash dans bytes 5+
   viewUint8Idmg.set(mhValeur, 5)
 
+  // console.debug("viewUint8Idmg : %O", viewUint8Idmg)
+
   // Encoder en multibase
   var mbValeur = base58btc.encode(viewUint8Idmg)
-  mbValeur = String.fromCharCode.apply(null, mbValeur)
+  // console.debug("mbValeur : %s", mbValeur)
+  // mbValeur = String.fromCharCode.apply(null, mbValeur)
 
   return mbValeur
 }
@@ -68,7 +65,6 @@ export async function verifierIdmg(idmg, pem) {
     const bufferByteString = util.createBuffer(certBuffer, 'raw').getBytes()
     const digest = md.sha512.sha224.create().update(bufferByteString).digest()
     hachageCalcule = new Uint8Array(Buffer.from(digest.getBytes(), 'binary'))
-    // console.debug("Hachage calcule : %O\nHachage recu : %O", hachageCalcule, hachageRecu)
 
   } else if(version == 2) {
     dateExpBytes = view.slice(1, 5)
@@ -89,6 +85,7 @@ export async function verifierIdmg(idmg, pem) {
     throw new Error("Idmg invalide, date expiration mismatch")
   }
 
+  return true
 }
 
 export async function getIdmg(pem) {
