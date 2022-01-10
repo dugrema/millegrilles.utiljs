@@ -3,7 +3,7 @@
 // const stringify = require('json-stable-stringify')
 const multihash = require('multihashes')
 const multibase = require('multibase')
-const {util: forgeUtil, md: forgeMd, asn1: forgeAsn1, pki: forgePki} = require('node-forge')
+const {util: forgeUtil, md: forgeMd, asn1: forgeAsn1, pki: forgePki} = require('@dugrema/node-forge')
 
 // Hacheurs optimises pour la plateforme (C++, WASM, etc)
 // format: { algo: constructor }
@@ -15,6 +15,7 @@ const {util: forgeUtil, md: forgeMd, asn1: forgeAsn1, pki: forgePki} = require('
 var _hacheurs = {}
 
 export function setHacheurs(hacheurs) {
+  console.debug("Set Hacheurs : %O", hacheurs)
   _hacheurs = hacheurs
 }
 
