@@ -58,7 +58,7 @@ export async function calculerDigest(valeur, hashingCode) {
   const hacheurConstructor = _hacheurs[hashingCode]
   let digest
   if(hacheurConstructor) {
-    const hacheur = hacheurConstructor()
+    const hacheur = await hacheurConstructor()
     // Utiliser subtle dans le navigateur (native)
     digest = await hacheur.digest(valeur)
   } else {
@@ -132,7 +132,7 @@ export async function verifierHachage(hachageMultibase, valeur, opts) {
   const hacheurConstructor = _hacheurs[algo]
   let digestCalcule
   if(hacheurConstructor) {
-    const hacheur = hacheurConstructor()
+    const hacheur = await hacheurConstructor()
     // Utiliser subtle dans le navigateur (native)
     digestCalcule = await hacheur.digest(valeur)
   } else {

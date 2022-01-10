@@ -6,7 +6,8 @@ import base58 from 'base-58'
 import {calculerDigest, comparerArraybuffers} from './hachage'
 
 const VERSION_IDMG = 2,
-      HASHING_CODE = 'blake2s-256'
+      HASHING_CODE = 'blake2s-256',
+      ENCODING_IDMG = 'base58btc'
 
 export async function encoderIdmg(pem, opts) {
   opts = opts || {}
@@ -35,9 +36,9 @@ export async function encoderIdmg(pem, opts) {
   // console.debug("viewUint8Idmg : %O", viewUint8Idmg)
 
   // Encoder en multibase
-  var mbValeur = base58btc.encode(viewUint8Idmg)
+  var mbValeur = multibase.encode(ENCODING_IDMG, viewUint8Idmg)
   // console.debug("mbValeur : %s", mbValeur)
-  // mbValeur = String.fromCharCode.apply(null, mbValeur)
+  mbValeur = String.fromCharCode.apply(null, mbValeur)
 
   return mbValeur
 }
