@@ -6,11 +6,12 @@ import {v4 as uuidv4} from 'uuid'
 
 import {hacher, calculerDigest, hacherCertificat} from './hachage'
 import {detecterSubtle} from './chiffrage'
+import {chargerPemClePriveeEd25519} from './certificats'
 
 const debug = debugLib('millegrilles:common:formatteurMessage')
 
 const BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----"
-const VERSION_SIGNATURE = 0x1
+const VERSION_SIGNATURE = 0x2
 
 const {subtle: _subtle} = detecterSubtle()
 
@@ -31,13 +32,14 @@ export function hacherMessage(message) {
     }
   }
 
-  // Stringify en json trie
-  const messageString = stringify(copieMessage)
-  // Encoder en UTF_8
-  debug("hacherMessage: messageString = %s", messageString)
+  // Stringify en json trie, encoder en UTF_8
+  const encoder = new TextEncoder()
+  const messageBuffer = encoder.encode(stringify(copieMessage))
+
+  // debug("hacherMessage: messageBuffer = %O", messageBuffer)
 
   // Retourner promise de hachage
-  return hacher(messageString, {hashingCode: 'sha2-256', encoding: 'base64'})
+  return hacher(messageBuffer, {hashingCode: 'blake2s-256', encoding: 'base64'})
 
 }
 
@@ -106,7 +108,7 @@ export class FormatteurMessage {
 
   async formatterMessage(message, domaineAction, opts) {
     if(!this.fingerprint) throw new Error("formatteurMessage.formatterMessage Certificat n'est pas initialise")
-    if(this.err) throw new Error("Erreur initialisation FormatteurMessage : %O", this.err)
+    if(this.err) throw new Error(`Erreur initialisation FormatteurMessage : ${this.err}` )
 
     // Formatte le message
     var messageCopy = {...message}
@@ -171,7 +173,8 @@ export class FormatteurMessageSubtle extends FormatteurMessage {
 export class SignateurMessage {
 
   constructor(pemCle) {
-    this.cle = forgePki.privateKeyFromPem(pemCle)
+    // this.cle = forgePki.privateKeyFromPem(pemCle)
+    this.cle = chargerPemClePriveeEd25519(pemCle)
   }
 
   async signer(message) {
@@ -182,29 +185,33 @@ export class SignateurMessage {
       }
     }
     // Stringify en json trie
-    const messageString = stringify(copieMessage)
+    const encoder = new TextEncoder()
+    const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage))))
 
     // Calculer digest du message
-    const digestView = await calculerDigest(messageString, 'sha2-512')
-    const digestInfo = {digest: _=>forgeUtil.createBuffer(digestView, 'raw')}
+    const digestView = await calculerDigest(messageBuffer, 'blake2b-512')
+
+    // const digestInfo = {digest: _=>forgeUtil.createBuffer(digestView, 'raw')}
+    // let pss = forgePss.create({
+    //   md: forgeMd.sha512.create(),
+    //   mgf: forgeMgf.mgf1.create(forgeMd.sha512.create()),
+    //   saltLength: 64
+    // })
+    // const signature = forgeUtil.encode64(this.cle.sign(digestInfo, pss));
+    // var signatureStringBuffer = this.cle.sign(digestInfo, pss)
+    // const versionBuffer = forgeUtil.createBuffer()
+    // versionBuffer.putByte(VERSION_SIGNATURE)
+    // versionBuffer.putBytes(signatureStringBuffer)
+    // signatureStringBuffer = versionBuffer.getBytes()
+    // console.debug("Version + Signature buffer digest : %O", versionBuffer)
+    // console.debug("Signature string buffer : %O", signatureStringBuffer)
+    // const signatureBuffer = Buffer.from(signatureStringBuffer, 'binary')
 
     // Signer avec la cle
-    let pss = forgePss.create({
-      md: forgeMd.sha512.create(),
-      mgf: forgeMgf.mgf1.create(forgeMd.sha512.create()),
-      saltLength: 64
-    })
-    // const signature = forgeUtil.encode64(this.cle.sign(digestInfo, pss));
-    var signatureStringBuffer = this.cle.sign(digestInfo, pss)
-    const versionBuffer = forgeUtil.createBuffer()
-    versionBuffer.putByte(VERSION_SIGNATURE)
-    versionBuffer.putBytes(signatureStringBuffer)
-    // console.debug("Version + Signature buffer digest : %O", versionBuffer)
-
-    signatureStringBuffer = versionBuffer.getBytes()
-    // console.debug("Signature string buffer : %O", signatureStringBuffer)
-
-    const signatureBuffer = Buffer.from(signatureStringBuffer, 'binary')
+    const signature = Buffer.from(this.cle.sign(digestView), 'binary')
+    const signatureBuffer = new Uint8Array(signature.length + 1)
+    signatureBuffer.set([VERSION_SIGNATURE], 0)
+    signatureBuffer.set(signature, 1)
     // console.debug("Signature buffer : %O", signatureBuffer)
 
     const mbValeur = multibase.encode('base64', signatureBuffer)
@@ -215,57 +222,58 @@ export class SignateurMessage {
 
 }
 
-export class SignateurMessageSubtle {
+// export class SignateurMessageSubtle {
 
-  constructor(cleSubtle) {
-    this.cle = cleSubtle
-  }
+//   constructor(cleSubtle) {
+//     this.cle = cleSubtle
+//   }
 
-  async signer(message) {
+//   async signer(message) {
 
-    const copieMessage = {}
-    for(let key in message) {
-      if ( ! key.startsWith('_') ) {
-        copieMessage[key] = message[key]
-      }
-    }
-    // Stringify en json trie
-    const messageString = stringify(copieMessage)
+//     const copieMessage = {}
+//     for(let key in message) {
+//       if ( ! key.startsWith('_') ) {
+//         copieMessage[key] = message[key]
+//       }
+//     }
+//     // Stringify en json trie
+//     const messageString = stringify(copieMessage)
 
-    const clePrivee = this.cle
+//     const clePrivee = this.cle
 
-    // Calcul taille salt:
-    // http://bouncy-castle.1462172.n4.nabble.com/Is-Bouncy-Castle-SHA256withRSA-PSS-compatible-with-OpenSSL-RSA-PSS-padding-with-SHA256-digest-td4656843.html
-    // Salt - changer pour 64, maximum supporte sur le iPhone
-    const modulusLength = clePrivee.algorithm.modulusLength
-    const saltLength = 64 // (modulusLength - 512) / 8 - 2
+//     // Calcul taille salt:
+//     // http://bouncy-castle.1462172.n4.nabble.com/Is-Bouncy-Castle-SHA256withRSA-PSS-compatible-with-OpenSSL-RSA-PSS-padding-with-SHA256-digest-td4656843.html
+//     // Salt - changer pour 64, maximum supporte sur le iPhone
+//     const modulusLength = clePrivee.algorithm.modulusLength
+//     const saltLength = 64 // (modulusLength - 512) / 8 - 2
 
-    const paramsSignature = {
-      name: clePrivee.algorithm.name,
-      saltLength,
-    }
+//     const paramsSignature = {
+//       name: clePrivee.algorithm.name,
+//       saltLength,
+//     }
 
-    const encoder = new TextEncoder()
-    const contenuAb = encoder.encode(messageString)
+//     const encoder = new TextEncoder()
+//     const contenuAb = encoder.encode(messageString)
 
-    var signature = await _subtle.sign(paramsSignature, clePrivee, contenuAb)
+//     var signature = await _subtle.sign(paramsSignature, clePrivee, contenuAb)
 
-    // Ajouter version
-    const bufferVersion = new ArrayBuffer(1)
-    const viewBuffer = new Uint8Array(bufferVersion)
-    viewBuffer.set([VERSION_SIGNATURE], 0)
-    // console.debug("Signature buffer info : %O", signature)
-    signature = Buffer.concat([Buffer.from(bufferVersion), Buffer.from(signature)])
+//     // Ajouter version
+//     const bufferVersion = new ArrayBuffer(1)
+//     const viewBuffer = new Uint8Array(bufferVersion)
+//     viewBuffer.set([VERSION_SIGNATURE], 0)
+//     // console.debug("Signature buffer info : %O", signature)
+//     signature = Buffer.concat([Buffer.from(bufferVersion), Buffer.from(signature)])
 
-    const mbValeur = multibase.encode('base64', new Uint8Array(signature))
-    const mbString = String.fromCharCode.apply(null, mbValeur)
+//     const mbValeur = multibase.encode('base64', new Uint8Array(signature))
+//     const mbString = String.fromCharCode.apply(null, mbValeur)
 
-    return mbString
-  }
+//     return mbString
+//   }
 
-}
+// }
 
 export default {
   FormatteurMessage, FormatteurMessageSubtle, hacherMessage, SignateurMessage,
-  splitPEMCerts, SignateurMessageSubtle,
+  splitPEMCerts, 
+  //SignateurMessageSubtle,
 }

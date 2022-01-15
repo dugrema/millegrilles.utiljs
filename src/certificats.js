@@ -225,6 +225,10 @@ export function chargerPemClePriveeEd25519(pem, opts) {
   return key
 }
 
+export function exporterPemClePriveeEd25519(key) {
+  return ed25519.privateKeyToPem(pem)
+}
+
 function encryptPrivateKey(key, password) {
   const asn1Key = ed25519.privateKeyToAsn1(key)
   var encryptedPrivateKeyInfo = pki.encryptPrivateKeyInfo(

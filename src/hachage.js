@@ -272,7 +272,7 @@ export function hacherCertificat(cert) {
   const derBytes = forgeAsn1.toDer(forgePki.certificateToAsn1(cert)).getBytes()
   const certArray = new Uint8Array(Buffer.from(derBytes, 'binary'))
 
-  console.debug("!!! Hacher : %O, hacheurs disponibles : %O", certArray, Object.keys(_hacheurs))
+  // console.debug("!!! Hacher certificat : %O, hacheurs disponibles : %O", certArray, Object.keys(_hacheurs))
 
   // Retourner promise
   return hacher(certArray, {hashingCode: 'blake2s-256'})
