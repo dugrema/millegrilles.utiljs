@@ -83,6 +83,24 @@ export async function verifierSignatureMessage(message, certificat, opts) {
 
     // Aucune exception, la signature est valide
     return true
+  } else if(versionSignature === 2) {
+    signatureBuffer = signatureBuffer.slice(1)
+    signatureBuffer = String.fromCharCode.apply(null, signatureBuffer)
+    debug("Signature buffer 2 : %O", signatureBuffer)
+    const publicKey = certificat.publicKey
+
+    // Stringify en json trie
+    const encoder = new TextEncoder()
+    const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage))))
+    // Calculer digest du message
+    const digestView = await calculerDigest(messageBuffer, 'blake2b-512')
+    
+    // Verifier la signature. Lance une exception si invalide
+    if( publicKey.verify(digestView, signatureBuffer) !== true ) {
+      throw new Error("Erreur verification signature")
+    }
+
+    return true
 
   } else {
     throw new Error(`Version signature ${versionSignature} non supportee`)
