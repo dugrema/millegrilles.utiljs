@@ -175,8 +175,7 @@ export class SignateurMessage {
       // Format interne
       this.cle = cle
     } else {
-      // this.cle = forgePki.privateKeyFromPem(pemCle)
-      this.cle = chargerPemClePriveeEd25519(pemCle)
+      this.cle = chargerPemClePriveeEd25519(cle)
     }
   }
 
