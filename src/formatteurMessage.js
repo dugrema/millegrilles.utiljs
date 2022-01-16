@@ -1,10 +1,10 @@
 import debugLib from 'debug'
 import stringify from 'json-stable-stringify'
 import multibase from 'multibase'
-import {pki as forgePki, md as forgeMd, util as forgeUtil, mgf as forgeMgf, pss as forgePss} from '@dugrema/node-forge'
+import {pki as forgePki, md as forgeMd, util as forgeUtil, mgf as forgeMgf, pss as forgePss, ed25519} from '@dugrema/node-forge'
 import {v4 as uuidv4} from 'uuid'
 
-import {hacher, calculerDigest, hacherCertificat} from './hachage'
+import {hacher, calculerDigest, hacherCertificat, setHacheurs} from './hachage'
 import {detecterSubtle} from './chiffrage'
 import {chargerPemClePriveeEd25519} from './certificats'
 
@@ -15,6 +15,10 @@ const VERSION_SIGNATURE = 0x2
 
 const {subtle: _subtle} = detecterSubtle()
 
+export function setHacheurs2(hacheurs) {
+  setHacheurs(hacheurs)
+}
+
 export function splitPEMCerts(certs) {
   var splitCerts = certs.split(BEGIN_CERTIFICATE).map(c=>{
     return (BEGIN_CERTIFICATE + c).trim()
@@ -22,7 +26,8 @@ export function splitPEMCerts(certs) {
   return splitCerts.slice(1)
 }
 
-export function hacherMessage(message) {
+export function hacherMessage(message, opts) {
+  opts = opts || {}
 
   // Copier le message sans l'entete
   const copieMessage = {}
@@ -39,13 +44,17 @@ export function hacherMessage(message) {
   // debug("hacherMessage: messageBuffer = %O", messageBuffer)
 
   // Retourner promise de hachage
-  return hacher(messageBuffer, {hashingCode: 'blake2s-256', encoding: 'base64'})
+  return hacher(messageBuffer, {hashingCode: 'blake2s-256', encoding: 'base64', ...opts})
 
 }
 
 export class FormatteurMessage {
 
-  constructor(chainePem, cle) {
+  constructor(chainePem, cle, opts) {
+    console.debug("FormatteurMessage opts : %O", opts)
+    opts = opts || {}
+
+    if(opts.hacheurs) setHacheurs2(opts.hacheurs)
 
     if( typeof(chainePem) === 'string' ) {
       this.chainePem = splitPEMCerts(chainePem)
@@ -70,6 +79,7 @@ export class FormatteurMessage {
     this._promisesInit.push(
       hacherCertificat(this.cert)
         .then(fingerprint=>{
+          console.debug("Fingerprint certificat local recalcule: %s", fingerprint)
           this_inst.fingerprint = fingerprint
         })
     )
@@ -159,23 +169,36 @@ export class FormatteurMessage {
   }
 }
 
-export class FormatteurMessageSubtle extends FormatteurMessage {
+export class FormatteurMessageEd25519 extends FormatteurMessage {
 
-  // Override avec signateur subtle
+  // Override avec signateur ed25519
   async initialiserSignateur(cle) {
-    return new SignateurMessageSubtle(cle)
+    return new SignateurMessageEd25519(cle)
   }
 
 }
 
-export class SignateurMessage {
+// export class FormatteurMessageSubtle extends FormatteurMessage {
+
+//   // Override avec signateur subtle
+//   async initialiserSignateur(cle) {
+//     return new SignateurMessageSubtle(cle)
+//   }
+
+// }
+
+export class SignateurMessageEd25519 {
 
   constructor(cle) {
-    if(cle.privateKeyBytes) {
+    if (typeof(cle) === 'string') {
+      console.debug("Charger cle PEM : %O", cle)
+      this.cle = chargerPemClePriveeEd25519(cle)
+      console.debug('Cle privee chargee: %O', this.cle)
+    } else if (cle.privateKeyBytes) {
       // Format interne
       this.cle = cle
     } else {
-      this.cle = chargerPemClePriveeEd25519(cle)
+      throw new Error("Format cle privee inconnu")
     }
   }
 
@@ -193,22 +216,6 @@ export class SignateurMessage {
     // Calculer digest du message
     const digestView = await calculerDigest(messageBuffer, 'blake2b-512')
 
-    // const digestInfo = {digest: _=>forgeUtil.createBuffer(digestView, 'raw')}
-    // let pss = forgePss.create({
-    //   md: forgeMd.sha512.create(),
-    //   mgf: forgeMgf.mgf1.create(forgeMd.sha512.create()),
-    //   saltLength: 64
-    // })
-    // const signature = forgeUtil.encode64(this.cle.sign(digestInfo, pss));
-    // var signatureStringBuffer = this.cle.sign(digestInfo, pss)
-    // const versionBuffer = forgeUtil.createBuffer()
-    // versionBuffer.putByte(VERSION_SIGNATURE)
-    // versionBuffer.putBytes(signatureStringBuffer)
-    // signatureStringBuffer = versionBuffer.getBytes()
-    // console.debug("Version + Signature buffer digest : %O", versionBuffer)
-    // console.debug("Signature string buffer : %O", signatureStringBuffer)
-    // const signatureBuffer = Buffer.from(signatureStringBuffer, 'binary')
-
     // Signer avec la cle
     const signatureAvecCle = this.cle.sign(digestView)
     const signature = Buffer.from(signatureAvecCle, 'binary')
@@ -223,6 +230,60 @@ export class SignateurMessage {
   }
 
 }
+
+// export class SignateurMessage {
+
+//   constructor(cle) {
+//     if(cle.privateKeyBytes) {
+//       // Format interne
+//       this.cle = cle
+//     } else {
+//       this.cle = chargerPemClePriveeEd25519(cle)
+//     }
+//   }
+
+//   async signer(message) {
+//     const copieMessage = {}
+//     for(let key in message) {
+//       if ( ! key.startsWith('_') ) {
+//         copieMessage[key] = message[key]
+//       }
+//     }
+//     // Stringify en json trie
+//     const encoder = new TextEncoder()
+//     const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage))))
+
+//     // Calculer digest du message
+//     const digestView = await calculerDigest(messageBuffer, 'sha2-512')
+
+//     const digestInfo = {digest: _=>forgeUtil.createBuffer(digestView, 'raw')}
+//     let pss = forgePss.create({
+//       md: forgeMd.sha512.create(),
+//       mgf: forgeMgf.mgf1.create(forgeMd.sha512.create()),
+//       saltLength: 64
+//     })
+
+//     // Signer avec la cle
+//     const signature = forgeUtil.encode64(this.cle.sign(digestInfo, pss));
+//     var signatureStringBuffer = this.cle.sign(digestInfo, pss)
+//     const versionBuffer = forgeUtil.createBuffer()
+//     versionBuffer.putByte(VERSION_SIGNATURE)
+//     versionBuffer.putBytes(signatureStringBuffer)
+//     signatureStringBuffer = versionBuffer.getBytes()
+//     console.debug("Version + Signature buffer digest : %O", versionBuffer)
+//     console.debug("Signature string buffer : %O", signatureStringBuffer)
+//     const signatureBuffer = Buffer.from(signatureStringBuffer, 'binary')
+
+//     signatureBuffer.set([VERSION_SIGNATURE], 0)
+//     signatureBuffer.set(signature, 1)
+
+//     const mbValeur = multibase.encode('base64', signatureBuffer)
+//     const mbString = String.fromCharCode.apply(null, mbValeur)
+
+//     return mbString
+//   }
+
+// }
 
 // export class SignateurMessageSubtle {
 
@@ -275,7 +336,9 @@ export class SignateurMessage {
 // }
 
 export default {
-  FormatteurMessage, FormatteurMessageSubtle, hacherMessage, SignateurMessage,
+  FormatteurMessage, FormatteurMessageEd25519, 
+  hacherMessage, 
+  // SignateurMessage,
   splitPEMCerts, 
   //SignateurMessageSubtle,
 }

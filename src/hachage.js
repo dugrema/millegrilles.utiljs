@@ -44,6 +44,8 @@ export async function hacher(valeur, opts) {
   // Hacher la valeur
   const digestView = await calculerDigest(valeur, hashingCode)
 
+  if(opts.bytesOnly === true) return digestView  // Retourner les bytes directement
+
   // Creer le multihash
   const mhValeur = multihash.encode(digestView, hashingCode)
 
@@ -62,6 +64,7 @@ export async function calculerDigest(valeur, hashingCode) {
     // Utiliser subtle dans le navigateur (native)
     digest = await hacheur.digest(valeur)
   } else {
+    console.warn("Hachage %s pas optimise, hacheurs : %O", hashingCode, Object.keys(_hacheurs))
     // Fallback sur node-forge
     digest = _calculerHachageForge(valeur, {hash: hashingCode})
   }

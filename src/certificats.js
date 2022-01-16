@@ -226,7 +226,7 @@ export function chargerPemClePriveeEd25519(pem, opts) {
 }
 
 export function exporterPemClePriveeEd25519(key) {
-  return ed25519.privateKeyToPem(pem)
+  return ed25519.privateKeyToPem(key)
 }
 
 function encryptPrivateKey(key, password) {
