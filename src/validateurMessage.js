@@ -35,23 +35,29 @@ export async function verifierHachageMessage(message) {
     const messageString = stringify(copieMessage)
 
     // Verifier le hachage, lance une Error en cas de mismatch
-    debug("Message a verifier pour hachage :\n%O", copieMessage)
-    await verifierHachage(hashTransactionRecu, messageString)
+    debug("Message a verifier pour hachage :\n%O\n%s", copieMessage, hashTransactionRecu)
+    return await verifierHachage(hashTransactionRecu, messageString)
 
   } else {
     debug("Reponse sans entete -- on verifie la signature");
+    throw new Error("Message sans entete")
   }
 }
 
 export async function verifierSignatureMessage(message, certificat, opts) {
   opts = opts || {}
 
+  if(typeof(message) === 'string') {
+    const encoder = new TextEncoder()
+    message = encoder.encode(valeur)
+  }
+
   const entete = message['en-tete']
   const signature = message['_signature']
 
   const copieMessage = {}
   for(let champ in message) {
-    if(champ.startsWith('_') ) {
+    if( ! champ.startsWith('_') ) {
       copieMessage[champ] = message[champ]
     }
   }
@@ -60,13 +66,11 @@ export async function verifierSignatureMessage(message, certificat, opts) {
   debug("Message a verifier pour signature :\n%O\n: Signature : %s", copieMessage, signature)
 
   var signatureBuffer = multibase.decode(signature)
-  debug("Signature buffer 1 : %O", signatureBuffer)
   const versionSignature = signatureBuffer[0]
 
   if(versionSignature === 1) {
     signatureBuffer = signatureBuffer.slice(1)
     signatureBuffer = String.fromCharCode.apply(null, signatureBuffer)
-    debug("Signature buffer 2 : %O", signatureBuffer)
     const publicKey = certificat.publicKey
 
     const pss = forgePss.create({
@@ -85,18 +89,17 @@ export async function verifierSignatureMessage(message, certificat, opts) {
     return true
   } else if(versionSignature === 2) {
     signatureBuffer = signatureBuffer.slice(1)
-    signatureBuffer = String.fromCharCode.apply(null, signatureBuffer)
-    debug("Signature buffer 2 : %O", signatureBuffer)
+    debug("Signature v2 buffer : %O", signatureBuffer)
     const publicKey = certificat.publicKey
 
     // Stringify en json trie
-    const encoder = new TextEncoder()
-    const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage))))
+    const messageBuffer = new Uint8Array(Buffer.from(messageString))
     // Calculer digest du message
     const digestView = await calculerDigest(messageBuffer, 'blake2b-512')
     
     // Verifier la signature. Lance une exception si invalide
-    if( publicKey.verify(digestView, signatureBuffer) !== true ) {
+    const resultat = publicKey.verify(digestView, signatureBuffer)
+    if( resultat !== true ) {
       throw new Error("Erreur verification signature")
     }
 

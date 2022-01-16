@@ -46,6 +46,7 @@ export function hacherMessage(message) {
 export class FormatteurMessage {
 
   constructor(chainePem, cle) {
+
     if( typeof(chainePem) === 'string' ) {
       this.chainePem = splitPEMCerts(chainePem)
     } else {
@@ -63,19 +64,18 @@ export class FormatteurMessage {
 
     // Permettre de conserver le contexte et attendre initialisation au besoin
     const this_inst = this
-    var promisesInit = []
+    this._promisesInit = []
 
     // Calculer le fingerprint du certificat - il sera insere dans l'en-tete
-    promisesInit.push(
+    this._promisesInit.push(
       hacherCertificat(this.cert)
         .then(fingerprint=>{
-          // console.debug("Certificat utilise pour signature : %s", fingerprint)
           this_inst.fingerprint = fingerprint
         })
     )
 
     // Creer une instance de signateur
-    promisesInit.push(
+    this._promisesInit.push(
       this.initialiserSignateur(cle)
         .then(signateur=>{
           this.signateurMessage = signateur
@@ -84,20 +84,18 @@ export class FormatteurMessage {
 
     // Supporter attribut pour indiquer que la preparation est completee
     this._ready = false
-    this._promisesInit = promisesInit
-    Promise.all(promisesInit).then(_=>{
-      this._promisesInit = null
-      this._ready = true
+    Promise.all(this_inst._promisesInit).then(_=>{
+      this_inst._promisesInit = null
+      this_inst._ready = true
     }).catch(err=>{
       console.error("FormatteurMessage Erreur initialisation signateur : %O", err)
-      this.err = err
+      this_inst.err = err
     })
   }
 
   async ready() {
     if(this._promisesInit) {
-      await Promise.all(promisesInit)
-      return true
+      await Promise.all(this._promisesInit)
     }
     return this._ready
   }
@@ -172,9 +170,14 @@ export class FormatteurMessageSubtle extends FormatteurMessage {
 
 export class SignateurMessage {
 
-  constructor(pemCle) {
-    // this.cle = forgePki.privateKeyFromPem(pemCle)
-    this.cle = chargerPemClePriveeEd25519(pemCle)
+  constructor(cle) {
+    if(cle.privateKeyBytes) {
+      // Format interne
+      this.cle = cle
+    } else {
+      // this.cle = forgePki.privateKeyFromPem(pemCle)
+      this.cle = chargerPemClePriveeEd25519(pemCle)
+    }
   }
 
   async signer(message) {
@@ -208,11 +211,11 @@ export class SignateurMessage {
     // const signatureBuffer = Buffer.from(signatureStringBuffer, 'binary')
 
     // Signer avec la cle
-    const signature = Buffer.from(this.cle.sign(digestView), 'binary')
+    const signatureAvecCle = this.cle.sign(digestView)
+    const signature = Buffer.from(signatureAvecCle, 'binary')
     const signatureBuffer = new Uint8Array(signature.length + 1)
     signatureBuffer.set([VERSION_SIGNATURE], 0)
     signatureBuffer.set(signature, 1)
-    // console.debug("Signature buffer : %O", signatureBuffer)
 
     const mbValeur = multibase.encode('base64', signatureBuffer)
     const mbString = String.fromCharCode.apply(null, mbValeur)

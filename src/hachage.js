@@ -123,6 +123,11 @@ function _mapFonctionHachageForge(hachage) {
 export async function verifierHachage(hachageMultibase, valeur, opts) {
   opts = opts || {}
 
+  if(typeof(valeur) === 'string') {
+    const encoder = new TextEncoder()
+    valeur = encoder.encode(valeur)
+  }
+
   const mbBytes = multibase.decode(hachageMultibase)
   const mh = multihash.decode(mbBytes)
 
