@@ -97,7 +97,14 @@ export class CertificateStore {
       if(this.DEBUG) console.debug('Certificate verification failure: %s', JSON.stringify(err, null, 2))
     }
 
-    return valide
+    if(valide === true) {
+      // Retourner certificat
+      const cert = chaineCerts.shift()
+      cert.chain = chaineCerts
+      return cert
+    }
+
+    return false
   }
 
 }
