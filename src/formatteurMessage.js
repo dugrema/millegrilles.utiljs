@@ -338,7 +338,7 @@ export class SignateurMessageEd25519 {
 export default {
   FormatteurMessage, FormatteurMessageEd25519, 
   hacherMessage, 
-  // SignateurMessage,
+  SignateurMessageEd25519,
   splitPEMCerts, 
   //SignateurMessageSubtle,
 }

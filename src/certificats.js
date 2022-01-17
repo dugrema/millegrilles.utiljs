@@ -219,6 +219,11 @@ export function chargerPemClePriveeEd25519(pem, opts) {
   if(opts.password) {
     // Dechiffrer la cle privee
     key = decryptPrivateKey(pem, opts.password)
+    
+    if(opts.pemout === true) {
+      // Re-exporter la cle en PEM
+      key.pem = exporterPemClePriveeEd25519(key)
+    }
   } else {
     key = ed25519.privateKeyFromPem(pem)
   }
