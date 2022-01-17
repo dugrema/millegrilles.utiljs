@@ -137,7 +137,7 @@ export function chargerClePrivee(clePriveePEM, opts) {
 }
 
 export async function validerChaineCertificats(chainePEM, opts) {
-  debug("validerChaineCertificats chainePEM : %O", chainePEM)
+  debug("validerChaineCertificats chainePEM : %O, opts: %O", chainePEM, opts)
   if(typeof(chainePEM) === 'string') {
     chainePEM = splitPEMCerts(chainePEM)
   }
@@ -148,7 +148,7 @@ export async function validerChaineCertificats(chainePEM, opts) {
   if(!opts) opts = {}
 
   // Calculer idmg
-  const certCa = chainePEM[2]
+  const certCa = opts.ca || opts.certCa  //  chainePEM[chainePEM.length-1]
   if(!certCa) throw new Error("Chaine incomplete : " + chainePEM)
   const certCaForge = pki.certificateFromPem(certCa)
 

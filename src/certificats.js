@@ -1,5 +1,6 @@
 import { pki, ed25519 } from '@dugrema/node-forge'
 import debugLib from 'debug'
+import multibase from 'multibase'
 import { genererRandomSerial } from './forgecommon'
 import { encoderIdmg } from './idmg'
 
@@ -249,4 +250,16 @@ function publicKeyFromPrivateKey(privateKey) {
   const privateKeyBytes = privateKey.privateKeyBytes || privateKey
   var keyPair = ed25519.generateKeyPair({seed: privateKeyBytes})
   return keyPair.publicKey
+}
+
+/**
+ * 
+ * @param {*} pem Certificat X.509 en format PEM.
+ * @returns Fingerprint de la cle publique 
+ */
+export function fingerprintPublicKeyFromCertPem(pem) {
+  const cert = pki.certificateFromPem(pem)
+  const publicKeyBytes = cert.publicKey.publicKeyBytes
+  const fingerprintPk = String.fromCharCode.apply(null, multibase.encode("base64", publicKeyBytes))
+  return fingerprintPk
 }
