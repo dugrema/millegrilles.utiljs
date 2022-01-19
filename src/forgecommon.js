@@ -160,14 +160,14 @@ export async function validerChaineCertificats(chainePEM, opts) {
 
   // Calculer idmg
   const certCa = opts.ca || opts.certCa  //  chainePEM[chainePEM.length-1]
-  if(!certCa) throw new Error("Chaine incomplete : " + chainePEM)
+  if(!certCa) throw new Error("forgecommon Chaine incomplete, il manque le CA : " + chainePEM)
   const certCaForge = pki.certificateFromPem(certCa)
 
   // Verifier chaine de certificats du client
   const clientStore = opts.clientStore || new CertificateStore(certCa, {isPEM: true})
   const chaineOk = clientStore.verifierChaine(chainePEM)
 
-  if(!chaineOk) throw new Error("Chaine de certificats invalide")
+  if(!chaineOk) throw new Error("forgecommon Chaine de certificats invalide")
 
   const certClient = pki.certificateFromPem(chainePEM[0])
 
@@ -176,7 +176,7 @@ export async function validerChaineCertificats(chainePEM, opts) {
 
   var idmg = opts.idmg
   if(idmg && idmgExtrait !== idmg) {
-    throw new Error("Certificat (O=" + idmgExtrait + ") ne corespond pas au IDMG " + opts.idmg)
+    throw new Error("forgecommonCertificat (O=" + idmgExtrait + ") ne corespond pas au IDMG " + opts.idmg)
   } else {
     verifierIdmg(idmgExtrait, certCa)
     // Aucune erreur lancee, le IDMG est valide
@@ -186,7 +186,7 @@ export async function validerChaineCertificats(chainePEM, opts) {
   // Prendre le IDMG du issuer comme reference
   const idmgIssuer = certClient.issuer.getField('O').value
   if(idmgIssuer !== idmg) {
-    throw new Error("Certificat intermediaire (O=" + idmgIssuer + ") ne corespond pas au IDMG calcule " + idmg)
+    throw new Error("forgecommon Certificat intermediaire (O=" + idmgIssuer + ") ne corespond pas au IDMG calcule " + idmg)
   }
 
   return {cert: certClient, idmg: idmgIssuer, idmgCa: idmg, clientStore}
@@ -195,7 +195,7 @@ export async function validerChaineCertificats(chainePEM, opts) {
 export function verifierChallengeCertificat(certClient, messageSigne) {
   // Verifier la signature du message
   const signature = messageSigne['_signature']
-  if(!signature) throw new Error("Signature introuvable")
+  if(!signature) throw new Error("forgecommon Signature introuvable")
 
   const copieMessage = {...messageSigne}
   delete copieMessage['_signature']
