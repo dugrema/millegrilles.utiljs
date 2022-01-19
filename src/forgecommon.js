@@ -5,6 +5,7 @@ import stringify from 'json-stable-stringify'
 
 import {hacher} from './hachage'
 import {verifierIdmg, getIdmg} from './idmg'
+import { getRandom } from './random'
 
 const debug = debugLib('millegrilles:forgecommon')
 
@@ -124,7 +125,10 @@ export function matchCertificatKey(certificatPEM, keyPEM) {
 }
 
 export function genererRandomSerial() {
-  const serial = '' + Math.floor(Math.random() * 10000000000000000000)
+  const rndBuffer = getRandom(8)  // 64 bit
+  const nombre = new BigUint64Array(rndBuffer.buffer)[0]  // Convertir en view 64bit unsigned
+  const serial = '' + nombre
+  // const serial = '' + Math.floor(Math.random() * 10000000000000000000)
   if(serial.length < 2) {
     serial = '0' + serial
   }

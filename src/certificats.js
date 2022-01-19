@@ -2,6 +2,7 @@ import { pki, ed25519 } from '@dugrema/node-forge'
 import debugLib from 'debug'
 import multibase from 'multibase'
 import { genererRandomSerial } from './forgecommon'
+import { getRandom } from './random'
 import { encoderIdmg } from './idmg'
 
 const debug = debugLib("utiljs:certificats")
@@ -267,4 +268,12 @@ export function fingerprintPublicKeyFromCertPem(pem) {
   const publicKeyBytes = cert.publicKey.publicKeyBytes
   const fingerprintPk = String.fromCharCode.apply(null, multibase.encode("base64", publicKeyBytes))
   return fingerprintPk
+}
+
+export function genererPassword(nbBytes) {
+  nbBytes = nbBytes || 32
+  const abView = getRandom(nbBytes)
+  let aleatB64 = String.fromCharCode.apply(null, multibase.encode('base64', abView))
+  aleatB64 = aleatB64.slice(1)  // Retirer premier charactere (multibase)
+  return aleatB64
 }
