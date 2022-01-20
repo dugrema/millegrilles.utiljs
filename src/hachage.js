@@ -1,9 +1,11 @@
 // Module de hachage, utilise subtle dans le navigateur lorsque c'est approprie
 // Fallback sur node-forge
 // const stringify = require('json-stable-stringify')
-const multihash = require('multihashes')
-const multibase = require('multibase')
-const {util: forgeUtil, md: forgeMd, asn1: forgeAsn1, pki: forgePki} = require('@dugrema/node-forge')
+import multihash from 'multihashes'
+import multibase from 'multibase'
+import nodeforge from '@dugrema/node-forge'
+
+const { pki: forgePki } = nodeforge
 
 // Hacheurs optimises pour la plateforme (C++, WASM, etc)
 // format: { algo: constructor }
@@ -14,9 +16,14 @@ const {util: forgeUtil, md: forgeMd, asn1: forgeAsn1, pki: forgePki} = require('
 //          const digestBuffer = await hacheurInstance.digest(buffer)
 var _hacheurs = {}
 
-export function setHacheurs(hacheurs) {
+export function setHacheurs(hacheurs, opts) {
+  opts = opts || {}
   console.debug("Set Hacheurs : %O", hacheurs)
-  _hacheurs = hacheurs
+  if(opts.update) {
+    _hacheurs = {..._hacheurs, ...hacheurs}
+  } else {
+    _hacheurs = hacheurs
+  }
 }
 
 // // Charger subtle si disponible dans le navigateur
@@ -44,7 +51,7 @@ export async function hacher(valeur, opts) {
   // Hacher la valeur
   const digestView = await calculerDigest(valeur, hashingCode)
 
-  if(opts.bytesOnly === true) return digestView  // Retourner les bytes directement
+  if(opts.bytesOnly === true || encoding === 'bytes') return digestView  // Retourner les bytes directement
 
   // Creer le multihash
   const mhValeur = multihash.encode(digestView, hashingCode)
