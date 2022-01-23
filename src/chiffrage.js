@@ -19,29 +19,33 @@ export function setChiffrageAsymmetrique(algorithmes, opts) {
 }
 
 /* Section symmetrique */
-let chiffrageSymmetrique = {}
-export function setChiffrageSymmetrique(algorithmes, opts) {
-  opts = opts || {}
-  if(opts.update === true) {
-    chiffrageSymmetrique = {...chiffrageSymmetrique, ...algorithmes}
-  } else {
-    chiffrageSymmetrique = algorithmes
-  }
+
+var _ciphers = {}, _deciphers = {}
+
+export function setCiphers(ciphers, deciphers) {
+  console.debug("Setting \nCiphers: %O\nDeciphers: %O", ciphers, deciphers)
+  _ciphers = ciphers
+  _deciphers = deciphers
 }
 
-// xchacha20poly1305
-
-export async function chiffrer(contenu, opts) {
-  /* Chiffrer une string utf-8 ou un Buffer */
+export function chiffrer(contenu, opts) {
   opts = opts || {}
-
-  var resultatChiffrage
-  if(_subtle) {
-    return chiffrerSubtle(contenu, opts)
-  } else {
-    return chiffrerForge(contenu, opts)
-  }
+  const algo = opts.algo || 'xchacha20poly1305'
 }
+
+
+
+// export async function chiffrer(contenu, opts) {
+//   /* Chiffrer une string utf-8 ou un Buffer */
+//   opts = opts || {}
+
+//   var resultatChiffrage
+//   if(_subtle) {
+//     return chiffrerSubtle(contenu, opts)
+//   } else {
+//     return chiffrerForge(contenu, opts)
+//   }
+// }
 
 // export async function chiffrerSubtle(contenu, opts) {
 //   opts = opts || {}

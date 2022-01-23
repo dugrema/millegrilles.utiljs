@@ -1,6 +1,7 @@
 /* Tests de chiffrage asymmetrique avec cles EdDSA25519 (-> X25519) */
 import * as chiffrage from '../src/chiffrage.ed25519'
 import './hachage.config'
+import './chiffrage.config'
 
 import multibase from 'multibase'
 import nodeforge from '@dugrema/node-forge'
@@ -8,20 +9,29 @@ import ed2curve from 'ed2curve'
 const { ed25519 } = nodeforge,
       { convertPublicKey } = ed2curve
 
-test('test chiffrage cle secrete', () => {
-    console.debug("Test chiffrage")
+// test('test chiffrage cle secrete', () => {
+//     console.debug("Test chiffrage")
 
-    expect.assertions(3)
-    expect(()=>chiffrage.genererCleSecrete()).rejects.toThrow('utiljs chiffrage.ed25519 Cle publique null/undefined')
-    expect(()=>chiffrage.genererCleSecrete(1)).rejects.toThrow('utiljs chiffrage.ed25519 Format de cle publique inconnu')
-    expect(chiffrage.genererCleSecrete(CERT_PEM1)).resolves.not.toBeUndefined()
+//     expect.assertions(3)
+//     expect(()=>chiffrage.genererCleSecrete()).rejects.toThrow('utiljs chiffrage.ed25519 Cle publique null/undefined')
+//     expect(()=>chiffrage.genererCleSecrete(1)).rejects.toThrow('utiljs chiffrage.ed25519 Format de cle publique inconnu')
+//     expect(chiffrage.genererCleSecrete(CERT_PEM1)).resolves.not.toBeUndefined()
     
-})
+// })
 
-test('deriver cle secrete', async () => {
-    expect.assertions(2)
-    expect(await chiffrage.deriverCleSecrete(PEER_2_PRIVE, PEER_1_PUBLIC)).toEqual(CLE_SECRETE)
-    expect(await chiffrage.deriverCleSecrete(PEER_1_PRIVE, PEER_2_PUBLIC)).toEqual(CLE_SECRETE)
+// test('deriver cle secrete', async () => {
+//     expect.assertions(2)
+//     expect(await chiffrage.deriverCleSecrete(PEER_2_PRIVE, PEER_1_PUBLIC)).toEqual(CLE_SECRETE_1)
+//     expect(await chiffrage.deriverCleSecrete(PEER_1_PRIVE, PEER_2_PUBLIC)).toEqual(CLE_SECRETE_1)
+// })
+
+test('rechiffrer cle secrete', async () => {
+    expect.assertions(1)
+    const cleChiffree = await chiffrage.chiffrerCle(CLE_SECRETE_2, multibase.decode(PEER_1_PUBLIC))
+    const cleDechiffree = await chiffrage.dechiffrerCle(multibase.decode(cleChiffree), PEER_1_PRIVE)
+
+    console.debug("Cle originale\n%O\Cle dechiffree\n%O", CLE_SECRETE_2, cleDechiffree)
+    expect(CLE_SECRETE_2).toEqual(new Uint8Array(cleDechiffree))
 })
 
 const CERT_PEM1 = `
@@ -40,7 +50,8 @@ const PEER_1_PUBLIC = 'mPMbhxr+wKcmSyhUH4fqY1jxioTvKXvHAm2pnjvG6QSU'
 const PEER_1_PRIVE = multibase.decode('mJVgu7/9r0u6U3FGxaTGhoRhyIoNb2eWabnFoMMkklyJwWT761HqBUDbOLQXxsLF0BqTrUnmkvGEnptgoj48vvg')
 const PEER_2_PUBLIC = 'mZkNn2EqdRLp+iOuiWhM7zRBTpoog89EJDlMB/uos5Ds'
 const PEER_2_PRIVE = multibase.decode('mjs+Y266uF6nRinRlINqfVyedtpVr3EzydQdgOU/BBq0pAcsGar9BUdasq7QtubAyqc2iLSBEypThvrECajMY3g')
-const CLE_SECRETE = new Uint8Array(Buffer.from([161, 207, 216, 188, 200, 57, 144, 115, 103, 200, 227, 136, 69, 206, 50, 58, 248, 195, 23, 55, 227, 236, 208, 148, 0, 7, 153, 224, 14, 251, 18, 151]))
+const CLE_SECRETE_1 = new Uint8Array(Buffer.from([161, 207, 216, 188, 200, 57, 144, 115, 103, 200, 227, 136, 69, 206, 50, 58, 248, 195, 23, 55, 227, 236, 208, 148, 0, 7, 153, 224, 14, 251, 18, 151]))
+const CLE_SECRETE_2 = new Uint8Array(32)  // All zeros
 
 function genererTestData() {
     const keyPair1 = ed25519.generateKeyPair()

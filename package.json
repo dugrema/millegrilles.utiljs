@@ -53,6 +53,8 @@
   },
   "dependencies": {
     "curve25519-js": "^0.0.4",
-    "ed2curve": "^0.3.0"
+    "ed2curve": "^0.3.0",
+    "multiformats": "^9.6.2",
+    "xchacha20-js": "^0.3.0"
   }
 }
