@@ -9,21 +9,21 @@ import ed2curve from 'ed2curve'
 const { ed25519 } = nodeforge,
       { convertPublicKey } = ed2curve
 
-// test('test chiffrage cle secrete', () => {
-//     console.debug("Test chiffrage")
+test('test chiffrage cle secrete', () => {
+    console.debug("Test chiffrage")
 
-//     expect.assertions(3)
-//     expect(()=>chiffrage.genererCleSecrete()).rejects.toThrow('utiljs chiffrage.ed25519 Cle publique null/undefined')
-//     expect(()=>chiffrage.genererCleSecrete(1)).rejects.toThrow('utiljs chiffrage.ed25519 Format de cle publique inconnu')
-//     expect(chiffrage.genererCleSecrete(CERT_PEM1)).resolves.not.toBeUndefined()
+    expect.assertions(3)
+    expect(()=>chiffrage.genererCleSecrete()).rejects.toThrow('utiljs chiffrage.ed25519 Cle publique null/undefined')
+    expect(()=>chiffrage.genererCleSecrete(1)).rejects.toThrow('utiljs chiffrage.ed25519 Format de cle publique inconnu')
+    expect(chiffrage.genererCleSecrete(CERT_PEM1)).resolves.not.toBeUndefined()
     
-// })
+})
 
-// test('deriver cle secrete', async () => {
-//     expect.assertions(2)
-//     expect(await chiffrage.deriverCleSecrete(PEER_2_PRIVE, PEER_1_PUBLIC)).toEqual(CLE_SECRETE_1)
-//     expect(await chiffrage.deriverCleSecrete(PEER_1_PRIVE, PEER_2_PUBLIC)).toEqual(CLE_SECRETE_1)
-// })
+test('deriver cle secrete', async () => {
+    expect.assertions(2)
+    expect(await chiffrage.deriverCleSecrete(PEER_2_PRIVE, PEER_1_PUBLIC)).toEqual(CLE_SECRETE_1)
+    expect(await chiffrage.deriverCleSecrete(PEER_1_PRIVE, PEER_2_PUBLIC)).toEqual(CLE_SECRETE_1)
+})
 
 test('rechiffrer cle secrete', async () => {
     expect.assertions(1)
@@ -32,6 +32,16 @@ test('rechiffrer cle secrete', async () => {
 
     console.debug("Cle originale\n%O\Cle dechiffree\n%O", CLE_SECRETE_2, cleDechiffree)
     expect(CLE_SECRETE_2).toEqual(new Uint8Array(cleDechiffree))
+})
+
+test('rederiver cle secrete millegrille', async () => {
+    expect.assertions(1)
+    const cleChiffree = await chiffrage.genererCleSecrete(multibase.decode(PEER_1_PUBLIC))
+    const peerPublic = cleChiffree.peer
+    const cleDechiffree = await chiffrage.dechiffrerCle(multibase.decode(peerPublic), PEER_1_PRIVE)
+
+    console.debug("Cle originale\n%O\Cle dechiffree\n%O", cleChiffree.cle, cleDechiffree)
+    expect(cleChiffree.cle).toEqual(new Uint8Array(cleDechiffree))
 })
 
 const CERT_PEM1 = `
