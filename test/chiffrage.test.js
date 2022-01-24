@@ -2,7 +2,7 @@
 import nodeforge from '@dugrema/node-forge'
 import { base64 } from 'multiformats/bases/base64'
 
-import { chiffrer, dechiffrer, chiffrerDocument } from '../src/chiffrage'
+import { chiffrer, dechiffrer, chiffrerDocument, dechiffrerDocument } from '../src/chiffrage'
 import './hachage.config'
 import './chiffrage.config'
 import { deriverCleSecrete } from '../src/chiffrage.ed25519'
@@ -18,7 +18,7 @@ async function genererCert() {
     console.debug("Cle privee pem : %O", clePrivee)
     const certInfo = await genererCertificatMilleGrille(clePrivee.pem)
     console.debug("certInfo: %O", certInfo)
-    return certInfo
+    return {...certInfo, clePrivee}
 }
 
 test('chiffrage/dechiffrage message secret', async () =>  {
@@ -66,12 +66,28 @@ test('chiffrage/dechiffrage cle secrete', async () =>  {
     expect(resultatChiffrage.secretKey).toEqual(cleRederivee)
 })
 
-test.only('chiffrage/dechiffrage document', async () => {
+test('chiffrage/dechiffrage document', async () => {
     
+    // Preparer data, cert
     const docTest = {value: 'Document de test', nombre: 42}
     const certDummy = await genererCert()
+    const clePrivee = certDummy.clePrivee.privateKey.privateKeyBytes
 
+    // Chiffrer le document
     const docChiffre = await chiffrerDocument(docTest, 'DomaineTest', certDummy.pem, {idDoc: 'mondoc'}, {DEBUG: true})
     console.debug("Document chiffre: %O", docChiffre)
 
+    // Dechiffrer le document
+    const { cles, iv, tag, format } = docChiffre.commandeMaitrecles
+    const cleChiffree = cles[Object.keys(cles)[0]]
+    const messageCle = {
+        iv, tag, format,
+        cle: cleChiffree
+    }
+
+    const docDechiffre = await dechiffrerDocument(docChiffre.ciphertext, messageCle, clePrivee, {DEBUG: true})
+    console.debug("Document dechiffre : %O", docDechiffre)
+
+    expect.assertions(1)
+    expect(docDechiffre).toEqual(docTest)
 })

@@ -1,9 +1,14 @@
 import multibase from 'multibase'
 import { base64 } from 'multiformats/bases/base64'
 import nodeforge from '@dugrema/node-forge'
-import { genererCleSecrete as genererCleSecreteEd25519, chiffrerCle as chiffrerCleEd25519 } from './chiffrage.ed25519'
+import { 
+  genererCleSecrete as genererCleSecreteEd25519, 
+  chiffrerCle as chiffrerCleEd25519,
+  dechiffrerCle as dechiffrerCleEd25519,
+} from './chiffrage.ed25519'
 import { getRandom } from './random'
 import stringify from 'json-stable-stringify'
+import unzip from 'zlib'
 
 // console.debug("Nodeforge : %O", nodeforge)
 
@@ -222,22 +227,6 @@ export async function chiffrerDocument(doc, domaine, certificatChiffragePem, ide
 
   const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
   
-  // // Determiner si on utilise subtle ou forge pour le chiffrage asymmetrique
-  // var passwordChiffreBuffer = null
-  // if(_subtle) {
-  //   // Utiliser subtle
-  //   passwordChiffreBuffer = await chiffrerCleSecreteSubtle(clePublique, infoDocumentChiffre.password, {DEBUG})
-  // } else {
-  //   // Utiliser node forge
-  //   passwordChiffreBuffer = await chiffrerCleSecreteForge(clePublique, infoDocumentChiffre.password, {DEBUG})
-  // }
-  // const passwordChiffre = String.fromCharCode.apply(null, multibase.encode('base64', passwordChiffreBuffer))
-  //
-  // // const passwordChiffreBuffer = await chiffrerCleSecreteSubtle(clePublique, infoDocumentChiffre.password, {DEBUG})
-  // // const passwordChiffre = String.fromCharCode.apply(null, multibase.encode('base64', passwordChiffreBuffer))
-  // if(DEBUG) console.debug("Password chiffre : %O", passwordChiffre)
-  //
-
   const cleSecrete = infoDocumentChiffre.secretKey
 
   const commandeMaitrecles = await preparerCommandeMaitrecles(
@@ -255,59 +244,55 @@ export async function chiffrerDocument(doc, domaine, certificatChiffragePem, ide
   return {ciphertext: ciphertextString, commandeMaitrecles}
 }
 
-// export async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
-//   opts = opts || {}
-//   const DEBUG = opts.DEBUG
+export async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
+  opts = opts || {}
+  const DEBUG = opts.DEBUG
 
-//   if(typeof(ciphertext) === 'string') {
-//     // Assumer format multibase
-//     ciphertext = multibase.decode(ciphertext)
-//   }
-//   const {iv, tag, cle: passwordChiffre, format} = messageCle
+  if(typeof(ciphertext) === 'string') {
+    // Assumer format multibase
+    ciphertext = multibase.decode(ciphertext)
+  }
+  const {iv, tag, cle: passwordChiffre, format} = messageCle
 
-//   if(DEBUG) console.debug(`Dechiffrer message format ${format} avec iv: ${iv}, tag: ${tag}\nmessage: %O`, ciphertext)
+  if(DEBUG) console.debug(`Dechiffrer message format ${format} avec iv: ${iv}, tag: ${tag}\nmessage: %O`, ciphertext)
 
-//   // Dechiffrer le password a partir de la cle chiffree
-//   var password = null
-//   if( clePrivee.usages && clePrivee.usages.includes('decrypt') ) {
-//     // On a un cle privee subtle
-//     password = await dechiffrerCleSecreteSubtle(clePrivee, passwordChiffre, {DEBUG})
-//   } else if (clePrivee.n) {
-//     // Cle privee forge
-//     password = await dechiffrerCleSecreteForge(clePrivee, passwordChiffre, {DEBUG})
-//   } else {
-//     throw new Error("Format de la cle privee de dechiffrage inconnu")
-//   }
+  // Dechiffrer le password a partir de la cle chiffree
+  var password = null
+  if( Buffer.isBuffer(clePrivee) || ArrayBuffer.isView(clePrivee) ) {
+    password = await dechiffrerCleEd25519(messageCle.cle, clePrivee, opts)
+  } else {
+    throw new Error("Format de la cle privee de dechiffrage inconnu")
+  }
 
-//   if(DEBUG) console.debug("Password dechiffre : %O, iv: %s, tag: %s", password, iv, tag)
+  if(DEBUG) console.debug("Password dechiffre : %O, iv: %s, tag: %s", password, iv, tag)
 
-//   var contenuDocument = null
-//   if(format === 'mgs2') {
-//     var documentString = await dechiffrer(ciphertext, password, iv, tag)
-//     if(opts.unzip) {
-//       documentString = await new Promise((resolve, reject)=>{
-//         unzip(documentString, (err, buffer)=>{
-//           if(err) reject(err)
-//           resolve(buffer)
-//         })
-//       })
-//     }
-//     if(typeof(TextDecoder) !== 'undefined') {
-//       documentString = new TextDecoder().decode(documentString)  // buffer
-//     } else {
-//       documentString = forgeUtil.decodeUtf8(documentString)
-//     }
-//     if(!opts.nojson) {
-//       contenuDocument = JSON.parse(documentString)
-//     } else {
-//       contenuDocument = documentString
-//     }
-//   } else {
-//     throw new Error(`Format dechiffrage ${format} non supporte`)
-//   }
+  var contenuDocument = null
+  if(format === 'mgs3') {
+    var documentString = await dechiffrer(ciphertext, password, iv, tag)
+    if(opts.unzip) {
+      documentString = await new Promise((resolve, reject)=>{
+        unzip(documentString, (err, buffer)=>{
+          if(err) reject(err)
+          resolve(buffer)
+        })
+      })
+    }
+    if(typeof(TextDecoder) !== 'undefined') {
+      documentString = new TextDecoder().decode(documentString)  // buffer
+    } else {
+      documentString = forgeUtil.decodeUtf8(documentString)
+    }
+    if(!opts.nojson) {
+      contenuDocument = JSON.parse(documentString)
+    } else {
+      contenuDocument = documentString
+    }
+  } else {
+    throw new Error(`Format dechiffrage ${format} non supporte`)
+  }
 
-//   return contenuDocument
-// }
+  return contenuDocument
+}
 
 export async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   /* Permet de dechiffrer un ciphertext avec un minimum d'information. */
