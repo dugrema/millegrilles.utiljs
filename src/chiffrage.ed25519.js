@@ -21,8 +21,9 @@ const { pki, ed25519 } = nodeforge,
  */
 export async function genererCleSecrete(clePublique, opts) {
     opts = opts || {}
+    const formatPublicEd25519 = opts.ed25519!==undefined?opts.ed25519:true
 
-    const clePubliqueX25519 = convertirPublicEd25519VersX25519(clePublique, opts)
+    const clePubliqueX25519 = convertirPublicEd25519VersX25519(clePublique, {ed25519: formatPublicEd25519, ...opts})
     console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
 
     // Generer une cle Ed25519 "peer" pour deriver une cle secrete

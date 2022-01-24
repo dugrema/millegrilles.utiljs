@@ -186,7 +186,13 @@ export class Hacheur {
     this.mh = null
 
     const constructeur = _hacheurs[this.hashingCode]
-    this.ready = constructeur().then(digester=>this._digester=digester)
+    const inst = constructeur()
+    if(inst instanceof Promise) {
+      this._ready = inst.then(digester=>this._digester=digester)
+    } else {
+      this._ready = true
+      this._digester = inst
+    }
 
     this._textEncoder = new TextEncoder()
   }
