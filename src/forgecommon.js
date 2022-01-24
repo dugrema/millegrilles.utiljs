@@ -1,6 +1,6 @@
 import debugLib from 'debug'
 
-import { pki } from '@dugrema/node-forge'
+import nodeforge from '@dugrema/node-forge'
 import stringify from 'json-stable-stringify'
 
 import {hacher} from './hachage'
@@ -8,6 +8,7 @@ import {verifierIdmg, getIdmg} from './idmg'
 import { getRandom } from './random'
 
 const debug = debugLib('millegrilles:forgecommon')
+const { pki } = nodeforge
 
 const BEGIN_PUBLIC_KEY  = "-----BEGIN PUBLIC KEY-----",
       END_PUBLIC_KEY    = "-----END PUBLIC KEY-----",

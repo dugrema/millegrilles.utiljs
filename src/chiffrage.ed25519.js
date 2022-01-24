@@ -24,18 +24,18 @@ export async function genererCleSecrete(clePublique, opts) {
     const formatPublicEd25519 = opts.ed25519!==undefined?opts.ed25519:true
 
     const clePubliqueX25519 = convertirPublicEd25519VersX25519(clePublique, {ed25519: formatPublicEd25519, ...opts})
-    console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
+    // console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
 
     // Generer une cle Ed25519 "peer" pour deriver une cle secrete
     const { publicKey, privateKey } = ed25519.generateKeyPair()
     const peerPrivateX25519 = convertSecretKey(privateKey.privateKeyBytes),
           peerPublicX25519 = convertPublicKey(publicKey.publicKeyBytes)
     const peerPublic = base64.encode(peerPublicX25519)
-    console.debug("Cle peer generee:\npublic %O\private %O\nprivate x25519: %O\npeer public: %O", publicKey, privateKey, peerPrivateX25519, peerPublicX25519)
+    // console.debug("Cle peer generee:\npublic %O\private %O\nprivate x25519: %O\npeer public: %O", publicKey, privateKey, peerPrivateX25519, peerPublicX25519)
 
     // Deriver la cle secrete a partir de la cle publique et peer prive
     const cleSecreteHachee = await _deriverCleSecrete(peerPrivateX25519, clePubliqueX25519)
-    console.debug("Cle secrete hachee : %O", cleSecreteHachee)
+    // console.debug("Cle secrete hachee : %O", cleSecreteHachee)
 
     return {cle: cleSecreteHachee, peer: peerPublic, peerPublicBytes: peerPublicX25519}
 }
@@ -43,7 +43,7 @@ export async function genererCleSecrete(clePublique, opts) {
 export async function deriverCleSecrete(clePrivee, clePublique, opts) {
     opts = opts || {}
 
-    console.debug("Cle privee: %O", clePrivee)
+    // console.debug("Cle privee: %O", clePrivee)
     const clePriveeX25519 = convertirPriveEd25519VersX25519(clePrivee, opts)
 
     let clePubliqueX25519
@@ -64,7 +64,7 @@ export async function chiffrerCle(cleSecrete, clePublique, opts) {
     opts = opts || {}
 
     if( ! (cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
-        throw new Error("utiljs chiffrage.ed25519 chiffrerCle Format de cle prive inconnu")
+        throw new Error("utiljs chiffrage.ed25519 chiffrerCle Format de cle secrete inconnu")
     }
     // Obtenir une nouvelle cle peer pour le chiffrage du secret
     const clePeer = await genererCleSecrete(clePublique, opts)
@@ -73,10 +73,10 @@ export async function chiffrerCle(cleSecrete, clePublique, opts) {
     const clePubliquePeer = clePeer.peerPublicBytes,
           nonceHache = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
 
-    console.debug("Cle publique peer : %O\nnonce: %O\nCle intermediaire derivee : %O", clePubliquePeer, nonceHache, clePeer.cle)
+    // console.debug("Cle publique peer : %O\nnonce: %O\nCle intermediaire derivee : %O", clePubliquePeer, nonceHache, clePeer.cle)
     const cipher = crypto.createCipheriv('chacha20-poly1305', clePeer.cle, nonceHache, { authTagLength: 16 });
     const ciphertext = cipher.update(cleSecrete)
-    console.debug("Ciphertext : %O", new Uint8Array(ciphertext))
+    // console.debug("Ciphertext : %O", new Uint8Array(ciphertext))
     cipher.final()
     const tag = cipher.getAuthTag()
 
@@ -85,10 +85,10 @@ export async function chiffrerCle(cleSecrete, clePublique, opts) {
     cleChiffreeBuffer.set(clePubliquePeer, 0)
     cleChiffreeBuffer.set(ciphertext, 32)
     cleChiffreeBuffer.set(tag, 64)
-    console.debug("Cle chiffree buffer : %O", cleChiffreeBuffer)
+    // console.debug("Cle chiffree buffer : %O", cleChiffreeBuffer)
     const cleChiffreeStr = base64.encode(cleChiffreeBuffer)
 
-    console.debug("Resultat chiffrer cle : %O", cleChiffreeStr)
+    // console.debug("Resultat chiffrer cle : %O", cleChiffreeStr)
 
     return cleChiffreeStr
 }
@@ -123,11 +123,11 @@ export async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
               nonce = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
         
         const cleSecreteDerivee = await deriverCleSecrete(clePrivee, clePubliquePeer, opts)
-        console.debug("Cle dechiffrage nonce : %O\nCle intermediaire rederivee : %O", nonce, cleSecreteDerivee)
+        // console.debug("Cle dechiffrage nonce : %O\nCle intermediaire rederivee : %O", nonce, cleSecreteDerivee)
 
         const decipher = crypto.createDecipheriv('chacha20-poly1305', cleSecreteDerivee, nonce, { authTagLength: 16 })
         cleDechiffree = decipher.update(cleChiffree)
-        console.debug("Cle dechiffree : %O", new Uint8Array(cleDechiffree))
+        // console.debug("Cle dechiffree : %O", new Uint8Array(cleDechiffree))
         decipher.setAuthTag(tag)
         decipher.final()
     } else {

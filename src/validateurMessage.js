@@ -6,11 +6,12 @@
 import debugLib from 'debug'
 import stringify from 'json-stable-stringify'
 import multibase from 'multibase'
-import { util as forgeUtil, pss as forgePss, md as forgeMd, mgf as forgeMgf } from '@dugrema/node-forge'
+import nodeforge from '@dugrema/node-forge'
 
 import {verifierHachage, calculerDigest} from './hachage'
 
 const debug = debugLib('millegrilles:common:validateurMessage')
+const { util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf } = nodeforge
 
 export function verifierMessage(message, certificat) {
   return Promise.all([

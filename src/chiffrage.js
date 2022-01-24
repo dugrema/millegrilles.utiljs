@@ -1,8 +1,9 @@
 import multibase from 'multibase'
 import { base64 } from 'multiformats/bases/base64'
 import nodeforge from '@dugrema/node-forge'
-import { genererCleSecrete as genererCleSecreteEd25519 } from './chiffrage.ed25519'
+import { genererCleSecrete as genererCleSecreteEd25519, chiffrerCle as chiffrerCleEd25519 } from './chiffrage.ed25519'
 import { getRandom } from './random'
+import stringify from 'json-stable-stringify'
 
 // console.debug("Nodeforge : %O", nodeforge)
 
@@ -19,16 +20,16 @@ const { pki: forgePki } = nodeforge
     }
   }
 */
-var _chiffrageAsymmetrique = {}
-export function setChiffrageAsymmetrique(chiffrageAsymmetrique, opts) {
-  opts = opts || {}
-  console.debug("Chiffrage asymmetrique : %O", chiffrageSymmetrique)
-  if(opts.update === true) {
-    _chiffrageAsymmetrique = {..._chiffrageAsymmetrique, ...chiffrageAsymmetrique}
-  } else {
-    _chiffrageAsymmetrique = chiffrageAsymmetrique
-  }
-}
+// var _chiffrageAsymmetrique = {}
+// export function setChiffrageAsymmetrique(chiffrageAsymmetrique, opts) {
+//   opts = opts || {}
+//   console.debug("Chiffrage asymmetrique : %O", chiffrageSymmetrique)
+//   if(opts.update === true) {
+//     _chiffrageAsymmetrique = {..._chiffrageAsymmetrique, ...chiffrageAsymmetrique}
+//   } else {
+//     _chiffrageAsymmetrique = chiffrageAsymmetrique
+//   }
+// }
 
 // Section symmetrique
 /*
@@ -87,7 +88,6 @@ export async function chiffrer(data, opts) {
     throw new Error(`Fournir information pour generer une cle secrete`)
   }
   const iv = await getRandom(chiffreur.nonceSize)
-  console.debug("IV : %O", iv)
 
   // Chiffrer
   const { ciphertext, tag, hachage } = await chiffreur.encrypt(secretKey, iv, data, {digestAlgo, ...opts})
@@ -165,13 +165,15 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
     }
 
     var passwordChiffre = null
-    if(_subtle) {
-      // Chiffrer avec subtle
-      passwordChiffre = await chiffrerCleSecreteSubtle(publicKey, password, {DEBUG})
-    } else {
-      // Chiffrer avec node forge
-      passwordChiffre = await chiffrerCleSecreteForge(publicKey, password, {DEBUG})
-    }
+    console.debug("!!!5 Password : %O", password)
+    passwordChiffre = await chiffrerCleEd25519(password, publicKey)
+    // if(_subtle) {
+    //   // Chiffrer avec subtle
+    //   passwordChiffre = await chiffrerCleSecreteSubtle(publicKey, password, {DEBUG})
+    // } else {
+    //   // Chiffrer avec node forge
+    //   passwordChiffre = await chiffrerCleSecreteForge(publicKey, password, {DEBUG})
+    // }
     // passwordChiffre = base64.encode('base64', passwordChiffre)
 
     if(DEBUG) console.debug("Password chiffre pour %s : %s", fingerprint, passwordChiffre)
@@ -188,55 +190,70 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
   return commandeMaitrecles
 }
 
-// export async function chiffrerDocument(doc, domaine, certificatsChiffragePem, identificateurs_document, opts) {
-//   opts = opts || {}
-//   const DEBUG = opts.DEBUG
+export async function chiffrerDocument(doc, domaine, certificatChiffragePem, identificateurs_document, opts) {
+  opts = opts || {}
+  const DEBUG = opts.DEBUG
 
-//   if(DEBUG) console.debug("Chiffrer document %O", doc)
-//   // if(DEBUG) console.debug("Verification du certificat pour chiffrer la cle")
-//   // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
+  if(DEBUG) console.debug("Chiffrer document %O", doc)
+  // if(DEBUG) console.debug("Verification du certificat pour chiffrer la cle")
+  // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
 
-//   var _doc = opts.nojson?doc:stringify(doc)  // string
-//   if(typeof(TextEncoder) !== 'undefined') {
-//     _doc = new TextEncoder().encode(_doc)  // buffer
-//   } else {
-//     _doc = Buffer.from(_doc, 'utf-8')
-//   }
+  var _doc = opts.nojson?doc:stringify(doc)  // string
+  if(typeof(TextEncoder) !== 'undefined') {
+    _doc = new TextEncoder().encode(_doc)  // buffer
+  } else {
+    _doc = Buffer.from(_doc, 'utf-8')
+  }
 
-//   const infoDocumentChiffre = await chiffrer(_doc)
-//   const meta = infoDocumentChiffre.meta
+  const certForge = forgePki.certificateFromPem(certificatChiffragePem)
+  const fingerprintCert = await hacherCertificat(certForge)
+  const clePublique = certForge.publicKey
+  const optsChiffrage = {...opts}
+  if(clePublique.keyType === '1.3.101.112') {
+    // Format EdDSA25519
+    optsChiffrage.clePubliqueEd25519 = clePublique.publicKeyBytes
+    console.debug("Cle publique Ed25519, opts : %O", optsChiffrage)
+  }
 
-//   if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
+  const infoDocumentChiffre = await chiffrer(_doc, optsChiffrage)
+  const meta = infoDocumentChiffre.meta
 
-//   const ciphertextString = String.fromCharCode.apply(null, multibase.encode('base64', infoDocumentChiffre.ciphertext))
+  if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
 
-//   // const certForge = forgePki.certificateFromPem(certificatChiffragePem)
-//   // const clePublique = certForge.publicKey
-//   //
-//   // // Determiner si on utilise subtle ou forge pour le chiffrage asymmetrique
-//   // var passwordChiffreBuffer = null
-//   // if(_subtle) {
-//   //   // Utiliser subtle
-//   //   passwordChiffreBuffer = await chiffrerCleSecreteSubtle(clePublique, infoDocumentChiffre.password, {DEBUG})
-//   // } else {
-//   //   // Utiliser node forge
-//   //   passwordChiffreBuffer = await chiffrerCleSecreteForge(clePublique, infoDocumentChiffre.password, {DEBUG})
-//   // }
-//   // const passwordChiffre = String.fromCharCode.apply(null, multibase.encode('base64', passwordChiffreBuffer))
-//   //
-//   // // const passwordChiffreBuffer = await chiffrerCleSecreteSubtle(clePublique, infoDocumentChiffre.password, {DEBUG})
-//   // // const passwordChiffre = String.fromCharCode.apply(null, multibase.encode('base64', passwordChiffreBuffer))
-//   // if(DEBUG) console.debug("Password chiffre : %O", passwordChiffre)
-//   //
+  const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
+  
+  // // Determiner si on utilise subtle ou forge pour le chiffrage asymmetrique
+  // var passwordChiffreBuffer = null
+  // if(_subtle) {
+  //   // Utiliser subtle
+  //   passwordChiffreBuffer = await chiffrerCleSecreteSubtle(clePublique, infoDocumentChiffre.password, {DEBUG})
+  // } else {
+  //   // Utiliser node forge
+  //   passwordChiffreBuffer = await chiffrerCleSecreteForge(clePublique, infoDocumentChiffre.password, {DEBUG})
+  // }
+  // const passwordChiffre = String.fromCharCode.apply(null, multibase.encode('base64', passwordChiffreBuffer))
+  //
+  // // const passwordChiffreBuffer = await chiffrerCleSecreteSubtle(clePublique, infoDocumentChiffre.password, {DEBUG})
+  // // const passwordChiffre = String.fromCharCode.apply(null, multibase.encode('base64', passwordChiffreBuffer))
+  // if(DEBUG) console.debug("Password chiffre : %O", passwordChiffre)
+  //
 
-//   const commandeMaitrecles = await preparerCommandeMaitrecles(
-//     certificatsChiffragePem, infoDocumentChiffre.password, domaine,
-//     meta.hachage_bytes, meta.iv, meta.tag, identificateurs_document,
-//     opts
-//   )
+  const cleSecrete = infoDocumentChiffre.secretKey
 
-//   return {ciphertext: ciphertextString, commandeMaitrecles}
-// }
+  const commandeMaitrecles = await preparerCommandeMaitrecles(
+    certificatChiffragePem, cleSecrete, domaine,
+    meta.hachage_bytes, meta.iv, meta.tag, identificateurs_document,
+    opts
+  )
+
+  // Override cle secrete chiffree pour certificat avec secret pour rederiver la cle (plus court)
+  if(infoDocumentChiffre.secretChiffre) {
+    const clesChiffrees = commandeMaitrecles.cles
+    clesChiffrees[fingerprintCert] = infoDocumentChiffre.secretChiffre
+  }
+
+  return {ciphertext: ciphertextString, commandeMaitrecles}
+}
 
 // export async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
 //   opts = opts || {}
@@ -318,21 +335,21 @@ export async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   return secretContent
 }
 
-export function detecterSubtle() {
-  var crypto
-  if( typeof(window) !== 'undefined' && window.crypto) {
-    // Navigateur / client
-    crypto = window.crypto
-  } else if( typeof(self) !== 'undefined' && self.crypto ) {
-    // Web worker
-    crypto = self.crypto
-  }
+// export function detecterSubtle() {
+//   var crypto
+//   if( typeof(window) !== 'undefined' && window.crypto) {
+//     // Navigateur / client
+//     crypto = window.crypto
+//   } else if( typeof(self) !== 'undefined' && self.crypto ) {
+//     // Web worker
+//     crypto = self.crypto
+//   }
 
-  var subtle = null, getRandomValues = null
-  if(crypto) {
-    subtle = crypto.subtle
-    getRandomValues = buffer => {crypto.getRandomValues(buffer)}
-  }
+//   var subtle = null, getRandomValues = null
+//   if(crypto) {
+//     subtle = crypto.subtle
+//     getRandomValues = buffer => {crypto.getRandomValues(buffer)}
+//   }
 
-  return {subtle, getRandomValues}
-}
+//   return {subtle, getRandomValues}
+// }

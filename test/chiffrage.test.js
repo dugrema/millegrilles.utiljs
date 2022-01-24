@@ -2,12 +2,24 @@
 import nodeforge from '@dugrema/node-forge'
 import { base64 } from 'multiformats/bases/base64'
 
-import { chiffrer, dechiffrer } from '../src/chiffrage'
+import { chiffrer, dechiffrer, chiffrerDocument } from '../src/chiffrage'
 import './hachage.config'
 import './chiffrage.config'
 import { deriverCleSecrete } from '../src/chiffrage.ed25519'
 
+import { genererClePrivee, genererCertificatMilleGrille } from '../src/certificats'
+
+//console.debug("!!!3 NODEFORGE : %O", Object.keys(nodeforge))
+
 const { ed25519 } = nodeforge
+
+async function genererCert() {
+    const clePrivee = genererClePrivee()
+    console.debug("Cle privee pem : %O", clePrivee)
+    const certInfo = await genererCertificatMilleGrille(clePrivee.pem)
+    console.debug("certInfo: %O", certInfo)
+    return certInfo
+}
 
 test('chiffrage/dechiffrage message secret', async () =>  {
     const messageStr = "Allo, message secret"
@@ -35,7 +47,7 @@ test('chiffrage/dechiffrage message secret', async () =>  {
     expect(messageDechiffre).toBe(messageStr)
 })
 
-test.only('chiffrage/dechiffrage cle secrete', async () =>  {
+test('chiffrage/dechiffrage cle secrete', async () =>  {
     // Generer cle dummy
     const { publicKey, privateKey } = ed25519.generateKeyPair()
     const publicKeyBytes = publicKey.publicKeyBytes,
@@ -52,4 +64,14 @@ test.only('chiffrage/dechiffrage cle secrete', async () =>  {
 
     expect.assertions(1)
     expect(resultatChiffrage.secretKey).toEqual(cleRederivee)
+})
+
+test.only('chiffrage/dechiffrage document', async () => {
+    
+    const docTest = {value: 'Document de test', nombre: 42}
+    const certDummy = await genererCert()
+
+    const docChiffre = await chiffrerDocument(docTest, 'DomaineTest', certDummy.pem, {idDoc: 'mondoc'}, {DEBUG: true})
+    console.debug("Document chiffre: %O", docChiffre)
+
 })

@@ -5,7 +5,7 @@ import multihash from 'multihashes'
 import multibase from 'multibase'
 import nodeforge from '@dugrema/node-forge'
 
-const { pki: forgePki } = nodeforge
+const { pki: forgePki, asn1: forgeAsn1 } = nodeforge
 
 // Hacheurs optimises pour la plateforme (C++, WASM, etc)
 // format: { algo: constructor }
