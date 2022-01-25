@@ -64,7 +64,7 @@ export async function deriverCleSecrete(clePrivee, clePublique, opts) {
 export async function chiffrerCle(cleSecrete, clePublique, opts) {
     opts = opts || {}
 
-    if( ! (cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
+    if( ! (Buffer.isBuffer(clePublique) || cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
         throw new Error("utiljs chiffrage.ed25519 chiffrerCle Format de cle secrete inconnu")
     }
 
@@ -150,7 +150,7 @@ function convertirPublicEd25519VersX25519(clePublique, opts) {
         // Cle publique Ed25519
         const publicKey = clePublique
         cleX25519 = convertPublicKey(publicKey)
-    } else if(clePublique instanceof ArrayBuffer || ArrayBuffer.isView(clePublique)) {
+    } else if(Buffer.isBuffer(clePublique) || clePublique instanceof ArrayBuffer || ArrayBuffer.isView(clePublique)) {
         if(opts.ed25519 === true) {
             // Cle publique Ed25519
             cleX25519 = convertPublicKey(clePublique)

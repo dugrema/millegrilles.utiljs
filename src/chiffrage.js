@@ -175,7 +175,7 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
 
     // Chiffrer le mot de passe avec le certificat fourni
     const certForge = forgePki.certificateFromPem(pem)
-    const publicKey = certForge.publicKey
+    const publicKey = certForge.publicKey.publicKeyBytes
     const fingerprint = await hacherCertificat(certForge)
 
     // Choisir une partition de MaitreDesCles
@@ -186,14 +186,6 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
 
     var passwordChiffre = null
     passwordChiffre = await chiffrerCleEd25519(password, publicKey)
-    // if(_subtle) {
-    //   // Chiffrer avec subtle
-    //   passwordChiffre = await chiffrerCleSecreteSubtle(publicKey, password, {DEBUG})
-    // } else {
-    //   // Chiffrer avec node forge
-    //   passwordChiffre = await chiffrerCleSecreteForge(publicKey, password, {DEBUG})
-    // }
-    // passwordChiffre = base64.encode('base64', passwordChiffre)
 
     if(DEBUG) console.debug("Password chiffre pour %s : %s", fingerprint, passwordChiffre)
     cles[fingerprint] = passwordChiffre
