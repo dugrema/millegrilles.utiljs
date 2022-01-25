@@ -1,4 +1,4 @@
-import nodeforge from '@dugrema/node-forge'
+import { random } from '@dugrema/node-forge'
 
 export function getRandom(nbBytes) {
     var crypto
@@ -18,8 +18,7 @@ export function getRandom(nbBytes) {
         crypto.getRandomValues(abView)
     } else {
         // Forge default
-        let rndForgeBuffer = nodeforge.random.getBytesSync(nbBytes)
-        console.debug("!!! forge buffer? %O", rndForgeBuffer)
+        let rndForgeBuffer = random.getBytesSync(nbBytes)
         // Convertir en TypedArray
         abView = new Uint8Array(Buffer.from(rndForgeBuffer, 'binary'))
     }

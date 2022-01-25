@@ -1,6 +1,6 @@
 import validateurMessage from './validateurMessage.js'
 import formatteurMessage from './formatteurMessage.js'
-import forgecommon from './forgecommon.js'
+import * as forgecommon from './forgecommon.js'
 import constantes from './constantes.js'
 
 export { constantes, forgecommon, formatteurMessage, validateurMessage }

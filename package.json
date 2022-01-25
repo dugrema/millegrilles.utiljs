@@ -5,16 +5,20 @@
   "author": "dugrema",
   "license": "MIT",
   "repository": "dugrema/millegrilles.utiljs",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
   "module": "dist/index.modern.js",
   "source": "src/index.js",
   "type": "module",
+  "exports": {
+    "require": "./dist/index.cjs",
+    "default": "./dist/index.modern.js"
+  },
   "engines": {
     "node": ">=16"
   },
   "scripts": {
-    "build": "microbundle-crl --no-compress --format modern,cjs",
-    "start": "microbundle-crl watch --no-compress --format modern,cjs",
+    "build": "microbundle --format modern,cjs",
+    "start": "microbundle watch --no-compress --format modern,cjs",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "devDependencies": {
@@ -33,6 +37,7 @@
     "eslint-plugin-standard": "^4.0.1",
     "gh-pages": "^2.2.0",
     "jest": "^27.4.7",
+    "microbundle": "^0.14.2",
     "microbundle-crl": "^0.13.10",
     "npm-run-all": "^4.1.5",
     "prettier": "^2.0.4"
@@ -45,13 +50,13 @@
   "peerDependencies": {
     "@dugrema/node-forge": "github:dugrema/forge#ed25519",
     "base-58": "^0.0.1",
-    "json-stable-stringify": "^1.0.1",
-    "multibase": "^4.0.6",
-    "multihashes": "^4.0.3",
-    "uuid": "^8.3.2",
-    "zlib": "^1.0.5",
     "curve25519-js": "^0.0.4",
     "ed2curve": "^0.3.0",
-    "multiformats": "^9.6.2"
+    "json-stable-stringify": "^1.0.1",
+    "multibase": "^4.0.6",
+    "multiformats": "^9.6.2",
+    "multihashes": "^4.0.3",
+    "uuid": "^8.3.2",
+    "zlib": "^1.0.5"
   }
 }

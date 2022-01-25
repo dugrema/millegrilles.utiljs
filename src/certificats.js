@@ -1,4 +1,4 @@
-import nodeforge from '@dugrema/node-forge'
+import { pki, ed25519 } from '@dugrema/node-forge'
 import debugLib from 'debug'
 import multibase from 'multibase'
 import { genererRandomSerial } from './forgecommon'
@@ -6,7 +6,7 @@ import { getRandom } from './random'
 import { encoderIdmg } from './idmg'
 
 const debug = debugLib("utiljs:certificats")
-const { pki, ed25519 } = nodeforge
+// const { pki, ed25519 } = nodeforge
 
 const OID_UISERID = '1.2.3.4.3'
 

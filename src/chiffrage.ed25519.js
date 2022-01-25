@@ -1,14 +1,14 @@
 /* Chiffrage asymmetrique X25519. Supporte cles Ed25519 et X25519. */
-import nodeforge from '@dugrema/node-forge'
-import ed2curve from 'ed2curve'
+import { pki, ed25519 } from '@dugrema/node-forge'
+import { convertSecretKey, convertPublicKey } from 'ed2curve'
 import multibase from 'multibase'
 import curve25519 from 'curve25519-js'
 import hachage from './hachage'
 import { getCipher } from './chiffrage.ciphers'
 import { base64 } from 'multiformats/bases/base64'
 
-const { pki, ed25519 } = nodeforge,
-      { convertSecretKey, convertPublicKey } = ed2curve
+// const { pki, ed25519 } = nodeforge,
+// const { convertSecretKey, convertPublicKey } = ed2curve
 
 /**
  * 

@@ -1,6 +1,6 @@
 import multibase from 'multibase'
 import { base64 } from 'multiformats/bases/base64'
-import nodeforge from '@dugrema/node-forge'
+import { pki as forgePki } from '@dugrema/node-forge'
 import { 
   genererCleSecrete as genererCleSecreteEd25519, 
   chiffrerCle as chiffrerCleEd25519,
@@ -15,7 +15,7 @@ import unzip from 'zlib'
 import {hacher, hacherCertificat} from './hachage'
 import { getCipher } from './chiffrage.ciphers'
 
-const { pki: forgePki } = nodeforge
+//const { pki: forgePki } = nodeforge
 
 
 /**

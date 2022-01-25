@@ -1,11 +1,11 @@
-import nodeforge from '@dugrema/node-forge'
+import {pki, md, asn1, util} from '@dugrema/node-forge'
 import multihash from 'multihashes'
 import multibase from 'multibase'
 import base58 from 'base-58'
 
 import {calculerDigest, comparerArraybuffers} from './hachage'
 
-const {pki, md, asn1, util} = nodeforge
+// const {pki, md, asn1, util} = nodeforge
 
 const VERSION_IDMG = 2,
       HASHING_CODE = 'blake2s-256',
@@ -116,8 +116,4 @@ function _calculerExpiration(cert) {
   view32Uint[0] = dateExpEpoch_1000
 
   return bufferExpiration
-}
-
-export default {
-  encoderIdmg, verifierIdmg, getIdmg
 }
