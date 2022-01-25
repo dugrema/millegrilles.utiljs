@@ -26,6 +26,15 @@ export function splitPEMCerts(certs) {
   return splitCerts.slice(1)
 }
 
+export function formatterDateString(date) {
+  let year = date.getUTCFullYear();
+  let month = date.getUTCMonth() + 1; if(month < 10) month = '0'+month;
+  let day = date.getUTCDate(); if(day < 10) day = '0'+day;
+  let hour = date.getUTCHours(); if(hour < 10) hour = '0'+hour;
+  const dateFormattee = "" + year + month + day + hour;
+  return dateFormattee
+}
+
 export function hacherMessage(message, opts) {
   opts = opts || {}
 
@@ -340,5 +349,6 @@ export default {
   hacherMessage, 
   SignateurMessageEd25519,
   splitPEMCerts, 
+  formatterDateString,
   //SignateurMessageSubtle,
 }
