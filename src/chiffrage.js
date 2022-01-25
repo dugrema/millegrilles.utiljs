@@ -96,6 +96,63 @@ export async function dechiffrer(ciphertext, key, iv, tag, opts) {
   }
 }
 
+export async function preparerCipher(opts) {
+  opts = opts || {}
+  const cipherAlgo = opts.cipherAlgo || 'chacha20-poly1305',
+        taillePassword = opts.taillePassword,
+        clePubliqueEd25519 = opts.clePubliqueEd25519,
+        digestAlgo = opts.digestAlgo || 'blake2b-512'
+
+  // Faire un chiffrage one-pass
+  const chiffreur = getCipher(cipherAlgo)
+  if(!chiffreur) throw new Error(`Algorithme de chiffrage (${cipherAlgo}) non supporte`)
+  
+  // Generer nonce, cle
+  let secretKey, secretChiffre = null
+  if(clePubliqueEd25519) {
+    // Generer cle secrete derivee avec la cle publique
+    const cle = await genererCleSecreteEd25519(clePubliqueEd25519)
+    secretKey = cle.cle
+    secretChiffre = cle.peer
+  } else if(taillePassword) {
+    secretKey = await getRandom(taillePassword)
+  } else {
+    throw new Error(`Fournir information pour generer une cle secrete`)
+  }
+  const iv = await getRandom(chiffreur.nonceSize)
+
+  const cipher = await chiffreur.getCipher(secretKey, iv, {digestAlgo, ...opts})
+  
+  return {
+    cipher,
+    secretKey,
+    secretChiffre,
+    iv,
+  }
+
+}
+
+export async function preparerDecipher(key, iv, opts) {
+  opts = opts || {}
+  const algo = opts.algo || 'chacha20-poly1305'
+
+  if( ! key instanceof ArrayBuffer && ! ArrayBuffer.isView(key) ) {
+    throw new Error(`La cle symmetrique doit etre un Buffer`)
+  }
+
+  // Trouver decipher
+  const dechiffreur = getCipher(algo)
+  if(!dechiffreur) throw new Error(`Algorithme de chiffrage (${algo}) non supporte`)
+
+  // Convertir params multibase en buffer si applicable
+  if(typeof(iv) === 'string') iv = multibase.decode(iv)
+
+  const decipher = await dechiffreur.getDecipher(key, iv)
+
+  return decipher
+}
+
+
 export async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, iv, tag, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
