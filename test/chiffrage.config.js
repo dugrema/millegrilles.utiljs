@@ -1,6 +1,6 @@
 /* Facade pour crypto de nodejs. */
 import crypto from 'crypto'
-import { setCiphers } from '../src/chiffrage'
+import { setCiphers } from '../src/chiffrage.ciphers'
 import { Hacheur } from '../src/hachage'
 
 console.info("Ciphers disponibles : %s", crypto.getCiphers().reduce((liste, item)=>{

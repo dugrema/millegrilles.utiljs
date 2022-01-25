@@ -4,8 +4,7 @@ import ed2curve from 'ed2curve'
 import multibase from 'multibase'
 import curve25519 from 'curve25519-js'
 import hachage from './hachage'
-import { getCipher } from './chiffrage'
-// import crypto from 'crypto'
+import { getCipher } from './chiffrage.ciphers'
 import { base64 } from 'multiformats/bases/base64'
 
 const { pki, ed25519 } = nodeforge,

@@ -13,56 +13,10 @@ import unzip from 'zlib'
 // console.debug("Nodeforge : %O", nodeforge)
 
 import {hacher, hacherCertificat} from './hachage'
+import { getCipher } from './chiffrage.ciphers'
 
 const { pki: forgePki } = nodeforge
 
-// Section asymmetrique
-/*
-  Format
-  { 
-    _algo_: {
-
-    }
-  }
-*/
-// var _chiffrageAsymmetrique = {}
-// export function setChiffrageAsymmetrique(chiffrageAsymmetrique, opts) {
-//   opts = opts || {}
-//   console.debug("Chiffrage asymmetrique : %O", chiffrageSymmetrique)
-//   if(opts.update === true) {
-//     _chiffrageAsymmetrique = {..._chiffrageAsymmetrique, ...chiffrageAsymmetrique}
-//   } else {
-//     _chiffrageAsymmetrique = chiffrageAsymmetrique
-//   }
-// }
-
-// Section symmetrique
-/*
-Format cipher/decipher : 
-  { 
-    _algo_: {
-      getCipher(key, nonce, opts) -> {update(data) -> ciphertext, finalize() -> {tag, hachage}}, 
-      getDecipher(key, nonce, opts) -> {update(data) -> message, finalize(tag)}, 
-      encrypt(key, nonce, data, opts) -> {ciphertext, tag, hachage}, 
-      decrypt(key, nonce, data, tag, opts) -> message,
-      nonceSize: int
-    } 
-  }
-*/
-var _chiffrageSymmetrique = {}
-export function setCiphers(chiffrageSymmetrique, opts) {
-  opts = opts || {}
-  console.debug("Chiffrage symmetrique : %O", chiffrageSymmetrique)
-  if(opts.update === true) {
-    _chiffrageSymmetrique = {..._chiffrageSymmetrique, ...chiffrageSymmetrique}
-  } else {
-    _chiffrageSymmetrique = chiffrageSymmetrique
-  }
-}
-
-export function getCipher(algo) {
-  return _chiffrageSymmetrique[algo]
-}
 
 /**
  * Chiffrer une string utf-8 ou un Buffer
@@ -81,7 +35,7 @@ export async function chiffrer(data, opts) {
   }
 
   // Faire un chiffrage one-pass
-  const chiffreur = _chiffrageSymmetrique[cipherAlgo]
+  const chiffreur = getCipher(cipherAlgo)
   if(!chiffreur) throw new Error(`Algorithme de chiffrage (${cipherAlgo}) non supporte`)
   
   // Generer nonce, cle
@@ -123,7 +77,7 @@ export async function dechiffrer(ciphertext, key, iv, tag, opts) {
   }
 
   // Trouver decipher
-  const dechiffreur = _chiffrageSymmetrique[algo]
+  const dechiffreur = getCipher(algo)
   if(!dechiffreur) throw new Error(`Algorithme de chiffrage (${algo}) non supporte`)
   
   // Convertir params multibase en buffer si applicable
