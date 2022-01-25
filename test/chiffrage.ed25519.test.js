@@ -21,22 +21,22 @@ test('test chiffrage cle secrete', () => {
 
 test('deriver cle secrete', async () => {
     expect.assertions(2)
-    expect(await chiffrage.deriverCleSecrete(PEER_2_PRIVE, PEER_1_PUBLIC)).toEqual(CLE_SECRETE_1)
-    expect(await chiffrage.deriverCleSecrete(PEER_1_PRIVE, PEER_2_PUBLIC)).toEqual(CLE_SECRETE_1)
+    expect(await chiffrage.deriverCleSecrete(PEER_2_PRIVE, PEER_1_PUBLIC_X25519, {ed25519: false})).toEqual(CLE_SECRETE_1)
+    expect(await chiffrage.deriverCleSecrete(PEER_1_PRIVE, PEER_2_PUBLIC_X25519, {ed25519: false})).toEqual(CLE_SECRETE_1)
 })
 
 test('rechiffrer cle secrete', async () => {
     expect.assertions(1)
-    const cleChiffree = await chiffrage.chiffrerCle(CLE_SECRETE_2, multibase.decode(PEER_1_PUBLIC))
+    const cleChiffree = await chiffrage.chiffrerCle(CLE_SECRETE_2, multibase.decode(PEER_1_PUBLIC_X25519), {ed25519: false})
+    console.debug("Cle chiffree : %O", cleChiffree)
     const cleDechiffree = await chiffrage.dechiffrerCle(multibase.decode(cleChiffree), PEER_1_PRIVE)
-
     console.debug("Cle originale\n%O\Cle dechiffree\n%O", CLE_SECRETE_2, cleDechiffree)
     expect(CLE_SECRETE_2).toEqual(new Uint8Array(cleDechiffree))
 })
 
 test('rederiver cle secrete millegrille', async () => {
     expect.assertions(1)
-    const cleChiffree = await chiffrage.genererCleSecrete(multibase.decode(PEER_1_PUBLIC))
+    const cleChiffree = await chiffrage.genererCleSecrete(multibase.decode(PEER_1_PUBLIC_X25519), {ed25519: false})
     const peerPublic = cleChiffree.peer
     const cleDechiffree = await chiffrage.dechiffrerCle(multibase.decode(peerPublic), PEER_1_PRIVE)
 
@@ -56,9 +56,9 @@ MJyb/Ppa2C6PraSVPgJGWKl+/5S5tBr58KFNg+0H94CH4d1VCPwI
 -----END CERTIFICATE-----
 `
 
-const PEER_1_PUBLIC = 'mPMbhxr+wKcmSyhUH4fqY1jxioTvKXvHAm2pnjvG6QSU'
+const PEER_1_PUBLIC_X25519 = 'mPMbhxr+wKcmSyhUH4fqY1jxioTvKXvHAm2pnjvG6QSU'
 const PEER_1_PRIVE = multibase.decode('mJVgu7/9r0u6U3FGxaTGhoRhyIoNb2eWabnFoMMkklyJwWT761HqBUDbOLQXxsLF0BqTrUnmkvGEnptgoj48vvg')
-const PEER_2_PUBLIC = 'mZkNn2EqdRLp+iOuiWhM7zRBTpoog89EJDlMB/uos5Ds'
+const PEER_2_PUBLIC_X25519 = 'mZkNn2EqdRLp+iOuiWhM7zRBTpoog89EJDlMB/uos5Ds'
 const PEER_2_PRIVE = multibase.decode('mjs+Y266uF6nRinRlINqfVyedtpVr3EzydQdgOU/BBq0pAcsGar9BUdasq7QtubAyqc2iLSBEypThvrECajMY3g')
 const CLE_SECRETE_1 = new Uint8Array(Buffer.from([161, 207, 216, 188, 200, 57, 144, 115, 103, 200, 227, 136, 69, 206, 50, 58, 248, 195, 23, 55, 227, 236, 208, 148, 0, 7, 153, 224, 14, 251, 18, 151]))
 const CLE_SECRETE_2 = new Uint8Array(32)  // All zeros

@@ -49,12 +49,9 @@
     "multibase": "^4.0.6",
     "multihashes": "^4.0.3",
     "uuid": "^8.3.2",
-    "zlib": "^1.0.5"
-  },
-  "dependencies": {
+    "zlib": "^1.0.5",
     "curve25519-js": "^0.0.4",
     "ed2curve": "^0.3.0",
-    "multiformats": "^9.6.2",
-    "xchacha20-js": "^0.3.0"
+    "multiformats": "^9.6.2"
   }
 }

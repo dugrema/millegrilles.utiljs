@@ -60,6 +60,10 @@ export function setCiphers(chiffrageSymmetrique, opts) {
   }
 }
 
+export function getCipher(algo) {
+  return _chiffrageSymmetrique[algo]
+}
+
 /**
  * Chiffrer une string utf-8 ou un Buffer
  * @param {*} contenu 
@@ -67,7 +71,7 @@ export function setCiphers(chiffrageSymmetrique, opts) {
  */
 export async function chiffrer(data, opts) {
   opts = opts || {}
-  const cipherAlgo = opts.cipherAlgo || 'chacha20poly1305',
+  const cipherAlgo = opts.cipherAlgo || 'chacha20-poly1305',
         taillePassword = opts.taillePassword,
         clePubliqueEd25519 = opts.clePubliqueEd25519,
         digestAlgo = opts.digestAlgo || 'blake2b-512'
@@ -112,7 +116,7 @@ export async function chiffrer(data, opts) {
 
 export async function dechiffrer(ciphertext, key, iv, tag, opts) {
   opts = opts || {}
-  const algo = opts.algo || 'chacha20poly1305'
+  const algo = opts.algo || 'chacha20-poly1305'
 
   if( ! key instanceof ArrayBuffer && ! ArrayBuffer.isView(key) ) {
     throw new Error(`La cle symmetrique doit etre un Buffer`)
@@ -170,7 +174,6 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
     }
 
     var passwordChiffre = null
-    console.debug("!!!5 Password : %O", password)
     passwordChiffre = await chiffrerCleEd25519(password, publicKey)
     // if(_subtle) {
     //   // Chiffrer avec subtle

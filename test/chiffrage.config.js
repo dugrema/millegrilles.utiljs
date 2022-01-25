@@ -75,7 +75,7 @@ async function decryptChacha20Poly1305(key, nonce, data, tag, opts) {
 
 const ciphers = {
     // Nodejs Crypto
-    'chacha20poly1305': {
+    'chacha20-poly1305': {
         encrypt: encryptChacha20Poly1305,
         decrypt: decryptChacha20Poly1305,
         getCipher: creerCipherChacha20Poly1305,

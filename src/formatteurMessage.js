@@ -5,7 +5,7 @@ import { pki as forgePki } from '@dugrema/node-forge'
 import { v4 as uuidv4 } from 'uuid'
 
 import { hacher, calculerDigest, hacherCertificat, setHacheurs } from './hachage'
-import { detecterSubtle } from './chiffrage'
+// import { detecterSubtle } from './chiffrage'
 import { chargerPemClePriveeEd25519 } from './certificats'
 
 const debug = debugLib('millegrilles:common:formatteurMessage')
@@ -13,7 +13,7 @@ const debug = debugLib('millegrilles:common:formatteurMessage')
 const BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----"
 const VERSION_SIGNATURE = 0x2
 
-const {subtle: _subtle} = detecterSubtle()
+// const {subtle: _subtle} = detecterSubtle()
 
 export function setHacheurs2(hacheurs) {
   setHacheurs(hacheurs)

@@ -4,7 +4,8 @@ import ed2curve from 'ed2curve'
 import multibase from 'multibase'
 import curve25519 from 'curve25519-js'
 import hachage from './hachage'
-import crypto from 'crypto'
+import { getCipher } from './chiffrage'
+// import crypto from 'crypto'
 import { base64 } from 'multiformats/bases/base64'
 
 const { pki, ed25519 } = nodeforge,
@@ -13,18 +14,19 @@ const { pki, ed25519 } = nodeforge,
 /**
  * 
  * @param {*} clePublique Certificat PEM, cle Ed25519 (format Uint8Array ou objet avec .publicKeyBytes) ou 
- *                        cle X25519 (avec opts.x25519 === true)
+ *                        cle X25519 (avec opts.ed25519 === false)
  * @param {Object} opts Options object
  * 
  * opts :
- *  - x25519 : true indique que la clePublique est un buffer x25519
+ *  - ed25519 : true indique que la clePublique est un buffer ed25519
  */
 export async function genererCleSecrete(clePublique, opts) {
     opts = opts || {}
     const formatPublicEd25519 = opts.ed25519!==undefined?opts.ed25519:true
 
+    console.debug("clePublique : %O, formatPublicEd25519: %O", clePublique, formatPublicEd25519)
     const clePubliqueX25519 = convertirPublicEd25519VersX25519(clePublique, {ed25519: formatPublicEd25519, ...opts})
-    // console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
+    console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
 
     // Generer une cle Ed25519 "peer" pour deriver une cle secrete
     const { publicKey, privateKey } = ed25519.generateKeyPair()
@@ -66,29 +68,23 @@ export async function chiffrerCle(cleSecrete, clePublique, opts) {
     if( ! (cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
         throw new Error("utiljs chiffrage.ed25519 chiffrerCle Format de cle secrete inconnu")
     }
+
     // Obtenir une nouvelle cle peer pour le chiffrage du secret
-    const clePeer = await genererCleSecrete(clePublique, opts)
+    const clePeer = await genererCleSecrete(clePublique, opts),
+          clePubliquePeer = clePeer.peerPublicBytes
+
+    // Generer le nonce (iv) en hachant la cle publique
+    const nonceHache = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
 
     // Chiffrer le secret avec la nouvelle cle peer
-    const clePubliquePeer = clePeer.peerPublicBytes,
-          nonceHache = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
-
-    // console.debug("Cle publique peer : %O\nnonce: %O\nCle intermediaire derivee : %O", clePubliquePeer, nonceHache, clePeer.cle)
-    const cipher = crypto.createCipheriv('chacha20-poly1305', clePeer.cle, nonceHache, { authTagLength: 16 });
-    const ciphertext = cipher.update(cleSecrete)
-    // console.debug("Ciphertext : %O", new Uint8Array(ciphertext))
-    cipher.final()
-    const tag = cipher.getAuthTag()
+    const { ciphertext, tag } = await getCipher('chacha20-poly1305').encrypt(clePeer.cle, nonceHache, cleSecrete)
 
     // Encoder la cle peer publique et le ciphertext dans un meme buffer
     const cleChiffreeBuffer = new Uint8Array(80)
-    cleChiffreeBuffer.set(clePubliquePeer, 0)
-    cleChiffreeBuffer.set(ciphertext, 32)
-    cleChiffreeBuffer.set(tag, 64)
-    // console.debug("Cle chiffree buffer : %O", cleChiffreeBuffer)
+    cleChiffreeBuffer.set(clePubliquePeer, 0)   // 32 bytes cle publique x25519
+    cleChiffreeBuffer.set(ciphertext, 32)       // 32 bytes cle secrete chiffree
+    cleChiffreeBuffer.set(tag, 64)              // 16 bytes authentication tag
     const cleChiffreeStr = base64.encode(cleChiffreeBuffer)
-
-    // console.debug("Resultat chiffrer cle : %O", cleChiffreeStr)
 
     return cleChiffreeStr
 }
@@ -120,16 +116,13 @@ export async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
         const clePubliquePeer = cleSecreteBuffer.slice(0, 32),
               cleChiffree = cleSecreteBuffer.slice(32, 64),
               tag = cleSecreteBuffer.slice(64, 80),
-              nonce = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
+              nonceHache = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
         
         const cleSecreteDerivee = await deriverCleSecrete(clePrivee, clePubliquePeer, opts)
-        // console.debug("Cle dechiffrage nonce : %O\nCle intermediaire rederivee : %O", nonce, cleSecreteDerivee)
 
-        const decipher = crypto.createDecipheriv('chacha20-poly1305', cleSecreteDerivee, nonce, { authTagLength: 16 })
-        cleDechiffree = decipher.update(cleChiffree)
-        // console.debug("Cle dechiffree : %O", new Uint8Array(cleDechiffree))
-        decipher.setAuthTag(tag)
-        decipher.final()
+        // Dechiffrer la cle
+        cleDechiffree = await getCipher('chacha20-poly1305').decrypt(cleSecreteDerivee, nonceHache, cleChiffree, tag)
+    
     } else {
         throw new Error("chiffrage.ed25519 dechiffrerCle Param cleSecreteChiffree n'a pas une taille supportee (32 bytes ou 80 bytes)")
     }
@@ -152,11 +145,11 @@ function convertirPublicEd25519VersX25519(clePublique, opts) {
     } else if(typeof(clePublique) === 'string') {
         // Certificat PEM
         const cert = pki.certificateFromPem(clePublique)
-        const publicKey = cert.publicKey.publicKeyBytes
+        const publicKey = cert.publicKey
         cleX25519 = convertPublicKey(publicKey)
     } else if(clePublique.publicKeyBytes) {
         // Cle publique Ed25519
-        const publicKey = clePublique.publicKeyBytes
+        const publicKey = clePublique
         cleX25519 = convertPublicKey(publicKey)
     } else if(clePublique instanceof ArrayBuffer || ArrayBuffer.isView(clePublique)) {
         if(opts.ed25519 === true) {
