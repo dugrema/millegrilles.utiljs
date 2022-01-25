@@ -3,7 +3,7 @@ import { pki, ed25519 } from '@dugrema/node-forge'
 import { convertSecretKey, convertPublicKey } from 'ed2curve'
 import multibase from 'multibase'
 import curve25519 from 'curve25519-js'
-import hachage from './hachage'
+import { hacher } from './hachage'
 import { getCipher } from './chiffrage.ciphers'
 import { base64 } from 'multiformats/bases/base64'
 
@@ -73,7 +73,7 @@ export async function chiffrerCle(cleSecrete, clePublique, opts) {
           clePubliquePeer = clePeer.peerPublicBytes
 
     // Generer le nonce (iv) en hachant la cle publique
-    const nonceHache = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
+    const nonceHache = await (await hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
 
     // Chiffrer le secret avec la nouvelle cle peer
     const { ciphertext, tag } = await getCipher('chacha20-poly1305').encrypt(clePeer.cle, nonceHache, cleSecrete)
@@ -115,7 +115,7 @@ export async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
         const clePubliquePeer = cleSecreteBuffer.slice(0, 32),
               cleChiffree = cleSecreteBuffer.slice(32, 64),
               tag = cleSecreteBuffer.slice(64, 80),
-              nonceHache = await (await hachage.hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
+              nonceHache = await (await hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
         
         const cleSecreteDerivee = await deriverCleSecrete(clePrivee, clePubliquePeer, opts)
 
@@ -132,7 +132,7 @@ export async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
 async function _deriverCleSecrete(clePrivee, clePublique) {
     // Deriver la cle secrete a partir de la cle publique et peer prive
     const cleSecreteDerivee = curve25519.sharedKey(clePrivee, clePublique)
-    const cleSecreteHachee = await hachage.hacher(cleSecreteDerivee, {hashingCode: 'blake2s-256', encoding: 'bytes'})
+    const cleSecreteHachee = await hacher(cleSecreteDerivee, {hashingCode: 'blake2s-256', encoding: 'bytes'})
     return cleSecreteHachee
 }
 

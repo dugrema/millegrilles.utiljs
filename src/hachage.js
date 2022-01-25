@@ -152,6 +152,9 @@ export function comparerArraybuffers(buf1, buf2) {
 }
 
 // Faire await sur .ready avant d'utiliser
+// export function Hacheur(opts) {
+//   return new HacheurClass(opts)
+// }
 export class Hacheur {
   constructor(opts) {
     opts = opts || {}
@@ -162,10 +165,14 @@ export class Hacheur {
 
     const constructeur = _hacheurs[this.hashingCode]
     const inst = constructeur()
+    this.ready = Promise.resolve(true)
     if(inst instanceof Promise) {
-      this._ready = inst.then(digester=>this._digester=digester)
+      this.ready = inst.then( digester => {
+        console.debug("Digester ready : %O", digester)
+        this._digester = digester
+      })
+      console.debug("ready const", this.ready)
     } else {
-      this._ready = true
       this._digester = inst
     }
 
@@ -274,9 +281,9 @@ export function hacherCertificat(cert) {
   return hacher(certArray, {hashingCode: 'blake2s-256'})
 }
 
-export default {
-  hacher, verifierHachage, 
-  Hacheur, VerificateurHachage, 
-  calculerDigest,
-  hacherCertificat, comparerArraybuffers,
-}
+// export default {
+//   hacher, verifierHachage, 
+//   Hacheur, VerificateurHachage, 
+//   calculerDigest,
+//   hacherCertificat, comparerArraybuffers,
+// }
