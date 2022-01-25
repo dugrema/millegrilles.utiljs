@@ -1,6 +1,5 @@
 // Module de hachage, utilise subtle dans le navigateur lorsque c'est approprie
 // Fallback sur node-forge
-// const stringify = require('json-stable-stringify')
 import multihash from 'multihashes'
 import multibase from 'multibase'
 import nodeforge from '@dugrema/node-forge'
@@ -25,13 +24,6 @@ export function setHacheurs(hacheurs, opts) {
     _hacheurs = hacheurs
   }
 }
-
-// // Charger subtle si disponible dans le navigateur
-// function detecterSubtle() {
-//   if( typeof(window) !== 'undefined' && window.crypto) return window.crypto.subtle
-//   return null
-// }
-// const _subtle = detecterSubtle()
 
 /**
  * Calcule le hachage du buffer, retourne le multihash encode sous forme de multibase (str).
@@ -78,23 +70,6 @@ export async function calculerDigest(valeur, hashingCode) {
   const digestView = new Uint8Array(digest)
   return digestView
 }
-
-// function _calculerHachageSubtle(valeur, opts) {
-//   var hachageSubtle = opts.hash || 'sha2-512'
-
-//   if(typeof(valeur) === 'string') {
-//     valeur = new TextEncoder().encode(valeur)
-//   }
-
-//   if(hachageSubtle.indexOf('sha2-') > -1) {
-//     hachageSubtle = hachageSubtle.replace('sha2-', 'sha-')
-//   } else if(hachageSubtle.indexOf('sha') > -1 && hachage.indexOf('-') == -1) {
-//     hachageSubtle = hachageSubtle.replace('sha', 'sha-')
-//   }
-
-//   // console.debug("Hachage subtle avec algo : %O", hachageSubtle)
-//   return _subtle.digest(hachageSubtle, valeur)  // Promise
-// }
 
 function _calculerHachageForge(valeur, opts) {
   var hachage = opts.hash || 'sha2-512'
@@ -299,95 +274,9 @@ export function hacherCertificat(cert) {
   return hacher(certArray, {hashingCode: 'blake2s-256'})
 }
 
-// export function hacherPassword(password, iterations, salt) {
-//   // Retourne promise
-//   if(_subtle) {
-//     // crypto.subtle est disponible (navigateur)
-//     return hacherPasswordSubtle(password, iterations, salt)
-//   }
-//   return hacherPasswordCrypto(password, iterations, salt)
-// }
-
-// export async function hacherPasswordCrypto(password, iterations, salt, opts) {
-//   opts = opts || {}
-//   const hash = opts.hash || 'sha256',
-//         keySize = opts.keySize || 32
-
-//   // console.debug("Calculer password iterations : %d, salt : %O", iterations, salt)
-//   var saltBuffer = multibase.decode(salt)
-//   // console.debug("Salt buffer : %O", saltBuffer)
-
-//   var key = await new Promise((resolve, reject)=>{
-//     cryptoPbkdf2(password, saltBuffer, iterations, keySize, hash, (err, derivedKey)=>{
-//       if(err) return reject(err)
-//       resolve(derivedKey)
-//     })
-//   })
-
-//   // console.debug("Key : %O", key)
-//   key = new Uint8Array(Buffer.from(key, 'binary'))
-//   // console.debug("Key derivee : %O", key)
-//   const exportedKey = String.fromCharCode.apply(null, multibase.encode('base64', key))
-
-//   return exportedKey
-// }
-
-// export async function hacherPasswordSubtle(password, iterations, salt) {
-//   var saltBuffer = multibase.decode(salt)
-
-//   let enc = new TextEncoder()
-//   const keyMaterial = await _subtle.importKey(
-//     "raw",
-//     enc.encode(password),
-//     {name: "PBKDF2"},
-//     false,
-//     ["deriveBits", "deriveKey"]
-//   )
-
-//   const key = await window.crypto.subtle.deriveKey(
-//     {
-//       "name": "PBKDF2",
-//       salt: saltBuffer,
-//       iterations,
-//       "hash": "SHA-256"
-//     },
-//     keyMaterial,
-//     { "name": "AES-GCM", "length": 256},
-//     true,
-//     [ "encrypt", "decrypt" ]
-//   )
-
-//   console.debug("Key : %O", key)
-
-//   var exportedKey = Buffer.from(await _subtle.exportKey('raw', key))
-
-//   console.debug("Key exportee : %O", exportedKey)
-//   exportedKey = String.fromCharCode.apply(null, multibase.encode('base64', exportedKey))
-
-//   return exportedKey
-// }
-
-// export function hacherMessageSync(message, opts) {
-//   opts = opts || {}
-  
-//   const messageFiltre = {}
-//   for(let key in message) {
-//     if(!key.startsWith('_')) {
-//       messageFiltre[key] = message[key]
-//     }
-//   }
-
-//   const messageJsonStable = stringify(message)
-//   return _calculerHachageForge(messageJsonStable, opts)
-// }
-
 export default {
   hacher, verifierHachage, 
   Hacheur, VerificateurHachage, 
   calculerDigest,
   hacherCertificat, comparerArraybuffers,
-  // hacherPassword, 
-  // hacherPasswordCrypto, 
-  // hacherPasswordSubtle,
-  // hacherMessageSync,
 }
