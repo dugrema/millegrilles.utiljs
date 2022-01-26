@@ -29,7 +29,7 @@ outputs.forEach(info => {
   // plain unoptimized unminified bundle
   const bundle = Object.assign({}, common, {
     mode: 'development',
-    target: 'node',
+    target: 'web',  // node ou web
     output: {
       path: path.join(__dirname, 'dist'),
       filename: info.filenameBase + '.js',
@@ -77,6 +77,6 @@ outputs.forEach(info => {
     delete minify.output.libraryTarget;
   }
 
-  module.exports.push(bundle);
+  module.exports.push(bundle);  // Version dev
   module.exports.push(minify);
 });
