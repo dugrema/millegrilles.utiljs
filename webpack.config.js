@@ -29,7 +29,7 @@ outputs.forEach(info => {
   // plain unoptimized unminified bundle
   const bundle = Object.assign({}, common, {
     mode: 'development',
-    target: 'web',  // node ou web
+    target: 'node',  // node ou web
     output: {
       path: path.join(__dirname, 'dist'),
       filename: info.filenameBase + '.js',
