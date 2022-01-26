@@ -6,6 +6,7 @@
   "license": "MIT",
   "repository": "dugrema/millegrilles.utiljs",
   "main": "src/index.js",
+  "source": "src/index.js",
   "exports": {
     "require": "./dist/index.js",
     "default": "./dist/index.min.js"
