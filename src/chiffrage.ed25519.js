@@ -1,11 +1,11 @@
 /* Chiffrage asymmetrique X25519. Supporte cles Ed25519 et X25519. */
-import { pki, ed25519 } from '@dugrema/node-forge'
-import { convertSecretKey, convertPublicKey } from 'ed2curve'
-import multibase from 'multibase'
-import { sharedKey } from 'curve25519-js'
-import { hacher } from './hachage'
-import { getCipher } from './chiffrage.ciphers'
-import { base64 } from 'multiformats/bases/base64'
+const { pki, ed25519 } = require('@dugrema/node-forge')
+const { convertSecretKey, convertPublicKey } = require('ed2curve')
+const multibase = require('multibase')
+const { sharedKey } = require('curve25519-js')
+const { hacher } = require('./hachage')
+const { getCipher } = require('./chiffrage.ciphers')
+const { base64 } = require('multiformats/bases/base64')
 
 // const { pki, ed25519 } = nodeforge,
 // const { convertSecretKey, convertPublicKey } = ed2curve
@@ -19,7 +19,7 @@ import { base64 } from 'multiformats/bases/base64'
  * opts :
  *  - ed25519 : true indique que la clePublique est un buffer ed25519
  */
-export async function genererCleSecrete(clePublique, opts) {
+async function genererCleSecrete(clePublique, opts) {
     opts = opts || {}
     const formatPublicEd25519 = opts.ed25519!==undefined?opts.ed25519:true
 
@@ -41,7 +41,7 @@ export async function genererCleSecrete(clePublique, opts) {
     return {cle: cleSecreteHachee, peer: peerPublic, peerPublicBytes: peerPublicX25519}
 }
 
-export async function deriverCleSecrete(clePrivee, clePublique, opts) {
+async function deriverCleSecrete(clePrivee, clePublique, opts) {
     opts = opts || {}
 
     // console.debug("Cle privee: %O", clePrivee)
@@ -61,7 +61,7 @@ export async function deriverCleSecrete(clePrivee, clePublique, opts) {
     return cleSecrete
 }
 
-export async function chiffrerCle(cleSecrete, clePublique, opts) {
+async function chiffrerCle(cleSecrete, clePublique, opts) {
     opts = opts || {}
 
     if( ! (Buffer.isBuffer(clePublique) || cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
@@ -94,7 +94,7 @@ export async function chiffrerCle(cleSecrete, clePublique, opts) {
  * @param {*} clePrivee Buffer d'une cle privee Ed25519
  * @param {*} opts 
  */
-export async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
+async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
 
     let cleSecreteBuffer
     if(typeof(cleSecreteChiffree) === 'string') {
@@ -193,4 +193,8 @@ function convertirPriveEd25519VersX25519(clePrivee, opts) {
     }
 
     return cleX25519
+}
+
+module.exports = {
+    genererCleSecrete, deriverCleSecrete, chiffrerCle, dechiffrerCle,
 }

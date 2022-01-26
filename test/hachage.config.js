@@ -1,6 +1,6 @@
-import {setHacheurs} from '../src/hachage'
-import blake2 from 'blake2'
-import { createHash as cryptoCreateHash } from 'crypto'
+const {setHacheurs} = require('../src/hachage')
+const blake2 = require('blake2')
+const { createHash: cryptoCreateHash } = require('crypto')
 
 // Injecte les methodes de hachage natives avec setHacheurs pour la librairie utiljs
 
@@ -39,3 +39,4 @@ const hacheurs = {
 setHacheurs(hacheurs)
 
 // export { hacheurs }
+module.exports = { setHacheurs, hacheurs }

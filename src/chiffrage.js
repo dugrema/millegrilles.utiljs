@@ -1,19 +1,19 @@
-import multibase from 'multibase'
-import { base64 } from 'multiformats/bases/base64'
-import { pki as forgePki } from '@dugrema/node-forge'
-import { 
-  genererCleSecrete as genererCleSecreteEd25519, 
-  chiffrerCle as chiffrerCleEd25519,
-  dechiffrerCle as dechiffrerCleEd25519,
-} from './chiffrage.ed25519'
-import { getRandom } from './random'
-import stringify from 'json-stable-stringify'
-import unzip from 'zlib'
+const multibase = require('multibase')
+const { base64 } = require('multiformats/bases/base64')
+const { pki: forgePki } = require('@dugrema/node-forge')
+const { 
+  genererCleSecrete: genererCleSecreteEd25519, 
+  chiffrerCle: chiffrerCleEd25519,
+  dechiffrerCle: dechiffrerCleEd25519,
+} = require('./chiffrage.ed25519')
+const { getRandom } = require('./random')
+const stringify = require('json-stable-stringify')
+const unzip = require('zlib')
 
 // console.debug("Nodeforge : %O", nodeforge)
 
-import {hacher, hacherCertificat} from './hachage'
-import { getCipher } from './chiffrage.ciphers'
+const {hacher, hacherCertificat} = require('./hachage')
+const { getCipher } = require('./chiffrage.ciphers')
 
 //const { pki: forgePki } = nodeforge
 
@@ -23,7 +23,7 @@ import { getCipher } from './chiffrage.ciphers'
  * @param {*} contenu 
  * @param {*} opts 
  */
-export async function chiffrer(data, opts) {
+async function chiffrer(data, opts) {
   opts = opts || {}
   const cipherAlgo = opts.cipherAlgo || 'chacha20-poly1305',
         taillePassword = opts.taillePassword,
@@ -68,7 +68,7 @@ export async function chiffrer(data, opts) {
 
 }
 
-export async function dechiffrer(ciphertext, key, iv, tag, opts) {
+async function dechiffrer(ciphertext, key, iv, tag, opts) {
   opts = opts || {}
   const algo = opts.algo || 'chacha20-poly1305'
 
@@ -96,7 +96,7 @@ export async function dechiffrer(ciphertext, key, iv, tag, opts) {
   }
 }
 
-export async function preparerCipher(opts) {
+async function preparerCipher(opts) {
   opts = opts || {}
   const cipherAlgo = opts.cipherAlgo || 'chacha20-poly1305',
         taillePassword = opts.taillePassword,
@@ -132,7 +132,7 @@ export async function preparerCipher(opts) {
 
 }
 
-export async function preparerDecipher(key, iv, opts) {
+async function preparerDecipher(key, iv, opts) {
   opts = opts || {}
   const algo = opts.algo || 'chacha20-poly1305'
 
@@ -153,7 +153,7 @@ export async function preparerDecipher(key, iv, opts) {
 }
 
 
-export async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, iv, tag, identificateurs_document, opts) {
+async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, iv, tag, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
         format = opts.format || 'mgs3'
@@ -201,7 +201,7 @@ export async function preparerCommandeMaitrecles(certificatsPem, password, domai
   return commandeMaitrecles
 }
 
-export async function chiffrerDocument(doc, domaine, certificatChiffragePem, identificateurs_document, opts) {
+async function chiffrerDocument(doc, domaine, certificatChiffragePem, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
 
@@ -250,7 +250,7 @@ export async function chiffrerDocument(doc, domaine, certificatChiffragePem, ide
   return {ciphertext: ciphertextString, commandeMaitrecles}
 }
 
-export async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
+async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
 
@@ -300,7 +300,7 @@ export async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts
   return contenuDocument
 }
 
-export async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
+async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   /* Permet de dechiffrer un ciphertext avec un minimum d'information. */
   opts = opts || {}
   const permission = opts.permission
@@ -326,21 +326,7 @@ export async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   return secretContent
 }
 
-// export function detecterSubtle() {
-//   var crypto
-//   if( typeof(window) !== 'undefined' && window.crypto) {
-//     // Navigateur / client
-//     crypto = window.crypto
-//   } else if( typeof(self) !== 'undefined' && self.crypto ) {
-//     // Web worker
-//     crypto = self.crypto
-//   }
-
-//   var subtle = null, getRandomValues = null
-//   if(crypto) {
-//     subtle = crypto.subtle
-//     getRandomValues = buffer => {crypto.getRandomValues(buffer)}
-//   }
-
-//   return {subtle, getRandomValues}
-// }
+module.exports = {
+  chiffrer, dechiffrer, preparerCipher, preparerDecipher, preparerCommandeMaitrecles, 
+  chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
+}

@@ -1,8 +1,8 @@
 // Module de hachage, utilise subtle dans le navigateur lorsque c'est approprie
 // Fallback sur node-forge
-import multihash from 'multihashes'
-import multibase from 'multibase'
-import { pki as forgePki, asn1 as forgeAsn1 } from '@dugrema/node-forge'
+const multihash = require('multihashes')
+const multibase = require('multibase')
+const { pki: forgePki, asn1: forgeAsn1 } = require('@dugrema/node-forge')
 
 // const { pki: forgePki, asn1: forgeAsn1 } = nodeforge
 
@@ -15,7 +15,7 @@ import { pki as forgePki, asn1 as forgeAsn1 } from '@dugrema/node-forge'
 //          const digestBuffer = await hacheurInstance.digest(buffer)
 var _hacheurs = {}
 
-export function setHacheurs(hacheurs, opts) {
+function setHacheurs(hacheurs, opts) {
   opts = opts || {}
   console.debug("Set Hacheurs : %O", hacheurs)
   if(opts.update) {
@@ -32,7 +32,7 @@ export function setHacheurs(hacheurs, opts) {
  * @param {*} opts {hashingCode str, encoding str}
  * @returns 
  */
-export async function hacher(valeur, opts) {
+async function hacher(valeur, opts) {
   opts = opts || {}
   const hashingCode = opts.hashingCode || 'blake2b-512'
   const encoding = opts.encoding || 'base58btc'
@@ -55,7 +55,7 @@ export async function hacher(valeur, opts) {
   return mbValeur
 }
 
-export async function calculerDigest(valeur, hashingCode) {
+async function calculerDigest(valeur, hashingCode) {
   const hacheurConstructor = _hacheurs[hashingCode]
   let digest
   if(hacheurConstructor) {
@@ -105,7 +105,7 @@ function _mapFonctionHachageForge(hachage) {
   return fonctionHachage
 }
 
-export async function verifierHachage(hachageMultibase, valeur, opts) {
+async function verifierHachage(hachageMultibase, valeur, opts) {
   opts = opts || {}
 
   if(typeof(valeur) === 'string') {
@@ -139,7 +139,7 @@ export async function verifierHachage(hachageMultibase, valeur, opts) {
   }
 }
 
-export function comparerArraybuffers(buf1, buf2) {
+function comparerArraybuffers(buf1, buf2) {
   // https://stackoverflow.com/questions/21553528/how-to-test-for-equality-in-arraybuffer-dataview-and-typedarray
   if (buf1.byteLength != buf2.byteLength) return false;
     var dv1 = new Uint8Array(buf1);
@@ -155,7 +155,7 @@ export function comparerArraybuffers(buf1, buf2) {
 // export function Hacheur(opts) {
 //   return new HacheurClass(opts)
 // }
-export class Hacheur {
+class Hacheur {
   constructor(opts) {
     opts = opts || {}
     this.encoding = opts.encoding || 'base58btc'
@@ -217,7 +217,7 @@ export class Hacheur {
 }
 
 // Faire await .ready avant d'utiliser
-export class VerificateurHachage {
+class VerificateurHachage {
 
   constructor(hachage) {
     const mb = multibase.decode(hachage)
@@ -268,7 +268,7 @@ export class VerificateurHachage {
 
 }
 
-export function hacherCertificat(cert) {
+ function hacherCertificat(cert) {
   if(typeof(cert) === 'string') {
     cert = forgePki.certificateFromPem(cert)
   }
@@ -281,9 +281,10 @@ export function hacherCertificat(cert) {
   return hacher(certArray, {hashingCode: 'blake2s-256'})
 }
 
-// export default {
-//   hacher, verifierHachage, 
-//   Hacheur, VerificateurHachage, 
-//   calculerDigest,
-//   hacherCertificat, comparerArraybuffers,
-// }
+module.exports = {
+  hacher, verifierHachage, 
+  Hacheur, VerificateurHachage, 
+  calculerDigest,
+  hacherCertificat, comparerArraybuffers,
+  setHacheurs,
+}

@@ -3,24 +3,24 @@
 // const multibase = require('multibase')
 // const {util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf} = require('node-forge')
 // const {verifierHachage, calculerDigest} = require('./hachage')
-import debugLib from 'debug'
-import stringify from 'json-stable-stringify'
-import multibase from 'multibase'
-import { util as forgeUtil, pss as forgePss, md as forgeMd, mgf as forgeMgf } from '@dugrema/node-forge'
+const debug = require('debug')('millegrilles:common:validateurMessage')
+const stringify = require('json-stable-stringify')
+const multibase = require('multibase')
+const { util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf } = require('@dugrema/node-forge')
 
-import {verifierHachage, calculerDigest} from './hachage'
+const {verifierHachage, calculerDigest} = require('./hachage')
 
-const debug = debugLib('millegrilles:common:validateurMessage')
+// const debug = debugLib('millegrilles:common:validateurMessage')
 // const { util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf } = nodeforge
 
-export function verifierMessage(message, certificat) {
+function verifierMessage(message, certificat) {
   return Promise.all([
     verifierHachageMessage(message),
     verifierSignatureMessage(message, certificat)
   ])
 }
 
-export async function verifierHachageMessage(message) {
+async function verifierHachageMessage(message) {
   // Valider le contenu du message - hachage et signature
   const entete = message['en-tete']
 
@@ -45,7 +45,7 @@ export async function verifierHachageMessage(message) {
   }
 }
 
-export async function verifierSignatureMessage(message, certificat, opts) {
+async function verifierSignatureMessage(message, certificat, opts) {
   opts = opts || {}
 
   if(typeof(message) === 'string') {
@@ -111,6 +111,6 @@ export async function verifierSignatureMessage(message, certificat, opts) {
   }
 }
 
-export default {
+module.exports = {
   verifierMessage, verifierHachageMessage, verifierSignatureMessage,
 }

@@ -1,13 +1,13 @@
-import debugLib from 'debug'
+const debug = require('debug')('millegrilles:forgecommon')
 
-import { pki } from '@dugrema/node-forge'
-import stringify from 'json-stable-stringify'
+const { pki } = require('@dugrema/node-forge')
+const stringify = require('json-stable-stringify')
 
-import {hacher} from './hachage'
-import {verifierIdmg, getIdmg} from './idmg'
-import { getRandom } from './random'
+const {hacher} = require('./hachage')
+const {verifierIdmg, getIdmg} = require('./idmg')
+const { getRandom } = require('./random')
 
-const debug = debugLib('millegrilles:forgecommon')
+// const debug = debugLib('millegrilles:forgecommon')
 // const { pki } = nodeforge
 
 const BEGIN_PUBLIC_KEY  = "-----BEGIN PUBLIC KEY-----",
@@ -18,12 +18,12 @@ const BEGIN_PUBLIC_KEY  = "-----BEGIN PUBLIC KEY-----",
       VERSION_IDMG      = 1
 
 
-export function chiffrerPrivateKey(privateKey, motDePasse) {
+function chiffrerPrivateKey(privateKey, motDePasse) {
   var pem = pki.encryptRsaPrivateKey(privateKey, motDePasse);
   return pem
 }
 
-export function sauvegarderPrivateKeyToPEM(privateKey) {
+function sauvegarderPrivateKeyToPEM(privateKey) {
   // Exporte une cle privee Forge en format PKCS8 pour importer dans subtle
 
   var rsaPrivateKey = pki.privateKeyToAsn1(privateKey);
@@ -34,7 +34,7 @@ export function sauvegarderPrivateKeyToPEM(privateKey) {
   return pem
 }
 
-export function chiffrerPrivateKeyPEM(privateKeyPEM, motDePasse) {
+function chiffrerPrivateKeyPEM(privateKeyPEM, motDePasse) {
 
   const privateKey = pki.privateKeyFromPem(privateKeyPEM);
   var pem = pki.encryptRsaPrivateKey(privateKey, motDePasse);
@@ -43,22 +43,22 @@ export function chiffrerPrivateKeyPEM(privateKeyPEM, motDePasse) {
   return pem
 }
 
-export function enveloppePEMPublique(clePubliqueStr) {
+function enveloppePEMPublique(clePubliqueStr) {
   return [BEGIN_PUBLIC_KEY, clePubliqueStr, END_PUBLIC_KEY].join('\n')
 }
 
-export function enveloppePEMPrivee(clePriveeStr) {
+function enveloppePEMPrivee(clePriveeStr) {
   return [BEGIN_PRIVATE_KEY, clePriveeStr, END_PRIVATE_KEY].join('\n')
 }
 
-export function splitPEMCerts(certs) {
+function splitPEMCerts(certs) {
   var splitCerts = certs.split(BEGIN_CERTIFICATE).map(c=>{
     return (BEGIN_CERTIFICATE + c).trim()
   })
   return splitCerts.slice(1)
 }
 
-export class CertificateStore {
+class CertificateStore {
 
   constructor(caCert, opts) {
     if(!opts) opts = {}
@@ -111,7 +111,7 @@ export class CertificateStore {
 
 }
 
-export function matchCertificatKey(certificatPEM, keyPEM) {
+function matchCertificatKey(certificatPEM, keyPEM) {
   const cert = pki.certificateFromPem(certificatPEM)
   const key = pki.privateKeyFromPem(keyPEM)
 
@@ -125,7 +125,7 @@ export function matchCertificatKey(certificatPEM, keyPEM) {
   return cleCertMatch
 }
 
-export function genererRandomSerial() {
+function genererRandomSerial() {
   const rndBuffer = getRandom(8)  // 64 bit
   const nombre = new BigUint64Array(rndBuffer.buffer)[0]  // Convertir en view 64bit unsigned
   const serial = '' + nombre
@@ -136,7 +136,7 @@ export function genererRandomSerial() {
   return serial
 }
 
-export function chargerClePrivee(clePriveePEM, opts) {
+function chargerClePrivee(clePriveePEM, opts) {
   opts = opts || {}
 
   // console.debug("Charger cle privee (password: %O): %O", opts.password, clePriveePEM)
@@ -148,7 +148,7 @@ export function chargerClePrivee(clePriveePEM, opts) {
   }
 }
 
-export async function validerChaineCertificats(chainePEM, opts) {
+async function validerChaineCertificats(chainePEM, opts) {
   debug("validerChaineCertificats chainePEM : %O, opts: %O", chainePEM, opts)
   if(typeof(chainePEM) === 'string') {
     chainePEM = splitPEMCerts(chainePEM)
@@ -193,7 +193,7 @@ export async function validerChaineCertificats(chainePEM, opts) {
   return {cert: certClient, idmg: idmgIssuer, idmgCa: idmg, clientStore}
 }
 
-export function verifierChallengeCertificat(certClient, messageSigne) {
+function verifierChallengeCertificat(certClient, messageSigne) {
   // Verifier la signature du message
   const signature = messageSigne['_signature']
   if(!signature) throw new Error("forgecommon Signature introuvable")
@@ -207,7 +207,7 @@ export function verifierChallengeCertificat(certClient, messageSigne) {
   return signatureOk
 }
 
-export function extraireExtensionsMillegrille(certificatForge) {
+function extraireExtensionsMillegrille(certificatForge) {
   // Extraire niveaux de securite des extensions du certificat
   var niveauxSecurite = ''
   try {
@@ -265,7 +265,7 @@ export function extraireExtensionsMillegrille(certificatForge) {
   return {roles, niveauxSecurite, userId, delegationGlobale, delegationsDomaines, delegationsSousDomaines}
 }
 
-export function comparerArraybuffers(buf1, buf2) {
+function comparerArraybuffers(buf1, buf2) {
   // https://stackoverflow.com/questions/21553528/how-to-test-for-equality-in-arraybuffer-dataview-and-typedarray
   if (buf1.byteLength != buf2.byteLength) return false;
     var dv1 = new Int8Array(buf1);
@@ -277,7 +277,7 @@ export function comparerArraybuffers(buf1, buf2) {
     return true;
 }
 
-export function hacherPem(pem, opts) {
+function hacherPem(pem, opts) {
   opts = opts || {}
   const hashingCode = opts.hashingCode || 'sha2-256',
         encoding = opts.encoding || 'base64'
@@ -297,11 +297,11 @@ export function hacherPem(pem, opts) {
   return hacher(buffer, {hashingCode, encoding})
 }
 
-// export default {
-//   chiffrerPrivateKeyPEM, enveloppePEMPublique, enveloppePEMPrivee,
-//   matchCertificatKey, CertificateStore, genererRandomSerial, splitPEMCerts,
-//   chargerClePrivee, chiffrerPrivateKey,
-//   validerChaineCertificats, verifierChallengeCertificat, sauvegarderPrivateKeyToPEM,
-//   comparerArraybuffers, extraireExtensionsMillegrille,
-//   hacherPem,
-// }
+module.exports = {
+  chiffrerPrivateKeyPEM, enveloppePEMPublique, enveloppePEMPrivee,
+  matchCertificatKey, CertificateStore, genererRandomSerial, splitPEMCerts,
+  chargerClePrivee, chiffrerPrivateKey,
+  validerChaineCertificats, verifierChallengeCertificat, sauvegarderPrivateKeyToPEM,
+  comparerArraybuffers, extraireExtensionsMillegrille,
+  hacherPem,
+}

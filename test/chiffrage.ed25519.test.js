@@ -1,13 +1,13 @@
 /* Tests de chiffrage asymmetrique avec cles EdDSA25519 (-> X25519) */
-import * as chiffrage from '../src/chiffrage.ed25519'
-import './hachage.config'
-import './chiffrage.config'
+const chiffrage = require('../src/chiffrage.ed25519')
+// require('./hachage.config')
+require('./chiffrage.config')
 
-import multibase from 'multibase'
-import nodeforge from '@dugrema/node-forge'
-import ed2curve from 'ed2curve'
-const { ed25519 } = nodeforge,
-      { convertPublicKey } = ed2curve
+const multibase = require('multibase')
+const { ed25519 } = require('@dugrema/node-forge')
+const { convertPublicKey } = require('ed2curve')
+// const { ed25519 } = nodeforge,
+//       { convertPublicKey } = ed2curve
 
 test('test chiffrage cle secrete', () => {
     console.debug("Test chiffrage")

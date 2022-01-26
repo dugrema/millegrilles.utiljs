@@ -34,7 +34,8 @@ Format cipher/decipher :
   }
 */
 var _chiffrageSymmetrique = {}
-export function setCiphers(chiffrageSymmetrique, opts) {
+
+function setCiphers(chiffrageSymmetrique, opts) {
   opts = opts || {}
   console.debug("Chiffrage symmetrique : %O", chiffrageSymmetrique)
   if(opts.update === true) {
@@ -44,6 +45,8 @@ export function setCiphers(chiffrageSymmetrique, opts) {
   }
 }
 
-export function getCipher(algo) {
+function getCipher(algo) {
   return _chiffrageSymmetrique[algo]
 }
+
+module.exports = { setCiphers, getCipher }

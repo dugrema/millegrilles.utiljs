@@ -1,6 +1,6 @@
-import { random } from '@dugrema/node-forge'
+const { random } = require('@dugrema/node-forge')
 
-export function getRandom(nbBytes) {
+function getRandom(nbBytes) {
     var crypto
     if( typeof(window) !== 'undefined' && window.crypto) {
       // Navigateur / client
@@ -24,3 +24,5 @@ export function getRandom(nbBytes) {
     }
     return abView
 }
+
+module.exports = { getRandom }

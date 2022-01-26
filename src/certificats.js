@@ -1,11 +1,11 @@
-import { pki, ed25519 } from '@dugrema/node-forge'
-import debugLib from 'debug'
-import multibase from 'multibase'
-import { genererRandomSerial } from './forgecommon'
-import { getRandom } from './random'
-import { encoderIdmg } from './idmg'
+const { pki, ed25519 } = require('@dugrema/node-forge')
+const debug = require('debug')('utiljs:certificats')
+const multibase = require('multibase')
+const { genererRandomSerial } = require('./forgecommon')
+const { getRandom } = require('./random')
+const { encoderIdmg } = require('./idmg')
 
-const debug = debugLib("utiljs:certificats")
+// const debug = debugLib("utiljs:certificats")
 // const { pki, ed25519 } = nodeforge
 
 const OID_UISERID = '1.2.3.4.3'
@@ -21,7 +21,7 @@ Parametres opts :
   - password str: Chiffre la cle privee, retournee dans pemChiffre
   - dechiffre bool: True pour produire la cle dechiffree meme si password fourni
 */
-export function genererClePrivee(opts) {
+function genererClePrivee(opts) {
     opts = opts || {}
     const password = opts.password,
           dechiffre = opts.dechiffre
@@ -48,7 +48,7 @@ export function genererClePrivee(opts) {
 }
 
 // Genere un nouveau certificat de MilleGrille a partir d'un keypair
-export async function genererCertificatMilleGrille(clePriveePEM) {
+async function genererCertificatMilleGrille(clePriveePEM) {
 
   const privateKey = chargerPemClePriveeEd25519(clePriveePEM)
   const publicKey = publicKeyFromPrivateKey(privateKey.privateKeyBytes)
@@ -102,7 +102,7 @@ export async function genererCertificatMilleGrille(clePriveePEM) {
     - pemRacine str: PEM du certificat racine de la MilleGrille
     - cleRacine obj: Cle privee avec function sign(bytes)
 */
-export async function genererCertificatIntermediaire(pemCsr, pemRacine, cleRacine) {
+async function genererCertificatIntermediaire(pemCsr, pemRacine, cleRacine) {
   // Lire et verifier signature du CSR
   const csr = pki.certificationRequestFromPem(pemCsr)
   if(!csr.verify()) throw new Error("CSR invalide")
@@ -171,7 +171,7 @@ Params:
   - opts dict:
     - userId: Le userId de l'usager, si connu
 */
-export async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
+async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
   opts = opts || {}
   const userId = opts.userId
 
@@ -214,7 +214,7 @@ export async function genererCsrNavigateur(nomUsager, clePriveePEM, opts) {
   return csrPem
 }
 
-export function chargerPemClePriveeEd25519(pem, opts) {
+function chargerPemClePriveeEd25519(pem, opts) {
   opts = opts || {}
 
   let key
@@ -233,7 +233,7 @@ export function chargerPemClePriveeEd25519(pem, opts) {
   return key
 }
 
-export function exporterPemClePriveeEd25519(key) {
+function exporterPemClePriveeEd25519(key) {
   return ed25519.privateKeyToPem(key)
 }
 
@@ -264,17 +264,23 @@ function publicKeyFromPrivateKey(privateKey) {
  * @param {*} pem Certificat X.509 en format PEM.
  * @returns Fingerprint de la cle publique 
  */
-export function fingerprintPublicKeyFromCertPem(pem) {
+function fingerprintPublicKeyFromCertPem(pem) {
   const cert = pki.certificateFromPem(pem)
   const publicKeyBytes = cert.publicKey.publicKeyBytes
   const fingerprintPk = String.fromCharCode.apply(null, multibase.encode("base64", publicKeyBytes))
   return fingerprintPk
 }
 
-export function genererPassword(nbBytes) {
+function genererPassword(nbBytes) {
   nbBytes = nbBytes || 32
   const abView = getRandom(nbBytes)
   let aleatB64 = String.fromCharCode.apply(null, multibase.encode('base64', abView))
   aleatB64 = aleatB64.slice(1)  // Retirer premier charactere (multibase)
   return aleatB64
+}
+
+module.exports = {
+  genererClePrivee, genererCertificatMilleGrille, genererCertificatIntermediaire, genererCsrNavigateur,
+  chargerPemClePriveeEd25519, exporterPemClePriveeEd25519, 
+  fingerprintPublicKeyFromCertPem, genererPassword, 
 }

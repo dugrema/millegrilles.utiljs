@@ -1,17 +1,18 @@
 /* Tests de chiffrage asymmetrique avec cles EdDSA25519 (-> X25519) */
-import nodeforge from '@dugrema/node-forge'
-import { base64 } from 'multiformats/bases/base64'
+const { ed25519 } = require('@dugrema/node-forge')
+// console.debug("Nodeforge : %O", Object.keys(nodeforge))
+const { base64 } = require('multiformats/bases/base64')
 
-import { chiffrer, dechiffrer, chiffrerDocument, dechiffrerDocument } from '../src/chiffrage'
-import './hachage.config'
-import './chiffrage.config'
-import { deriverCleSecrete } from '../src/chiffrage.ed25519'
+require('./chiffrage.config')
 
-import { genererClePrivee, genererCertificatMilleGrille } from '../src/certificats'
+const { chiffrer, dechiffrer, chiffrerDocument, dechiffrerDocument } = require('../src/chiffrage')
+const { deriverCleSecrete } = require('../src/chiffrage.ed25519')
+
+const { genererClePrivee, genererCertificatMilleGrille } = require('../src/certificats')
 
 //console.debug("!!!3 NODEFORGE : %O", Object.keys(nodeforge))
 
-const { ed25519 } = nodeforge
+// const { ed25519 } = nodeforge
 
 async function genererCert() {
     const clePrivee = genererClePrivee()

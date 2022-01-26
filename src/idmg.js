@@ -1,9 +1,9 @@
-import {pki, md, asn1, util} from '@dugrema/node-forge'
-import multihash from 'multihashes'
-import multibase from 'multibase'
-import base58 from 'base-58'
+const {pki, md, asn1, util} = require('@dugrema/node-forge')
+const multihash = require('multihashes')
+const multibase = require('multibase')
+const base58 = require('base-58')
 
-import {calculerDigest, comparerArraybuffers} from './hachage'
+const {calculerDigest, comparerArraybuffers} = require('./hachage')
 
 // const {pki, md, asn1, util} = nodeforge
 
@@ -11,7 +11,7 @@ const VERSION_IDMG = 2,
       HASHING_CODE = 'blake2s-256',
       ENCODING_IDMG = 'base58btc'
 
-export async function encoderIdmg(pem, opts) {
+async function encoderIdmg(pem, opts) {
   opts = opts || {}
 
   const cert = pki.certificateFromPem(pem)
@@ -45,7 +45,7 @@ export async function encoderIdmg(pem, opts) {
   return mbValeur
 }
 
-export async function verifierIdmg(idmg, pem) {
+async function verifierIdmg(idmg, pem) {
   var idmgBytes
   try {
     idmgBytes = multibase.decode(idmg)
@@ -91,7 +91,7 @@ export async function verifierIdmg(idmg, pem) {
   return true
 }
 
-export async function getIdmg(pem) {
+async function getIdmg(pem) {
   if(typeof(pem) !== 'string') {
     pem = pem[0]
   }
@@ -116,4 +116,8 @@ function _calculerExpiration(cert) {
   view32Uint[0] = dateExpEpoch_1000
 
   return bufferExpiration
+}
+
+module.exports = {
+  encoderIdmg, verifierIdmg, getIdmg
 }

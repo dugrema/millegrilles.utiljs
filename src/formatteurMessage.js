@@ -1,32 +1,30 @@
-import debugLib from 'debug'
-import stringify from 'json-stable-stringify'
-import multibase from 'multibase'
-import { pki as forgePki } from '@dugrema/node-forge'
-import { v4 as uuidv4 } from 'uuid'
+const debug = require('debug')('millegrilles:common:formatteurMessage')
+const stringify = require('json-stable-stringify')
+const multibase = require('multibase')
+const { pki: forgePki } = require('@dugrema/node-forge')
+const { v4: uuidv4 } = require('uuid')
 
-import { hacher, calculerDigest, hacherCertificat, setHacheurs } from './hachage'
+const { hacher, calculerDigest, hacherCertificat, setHacheurs } = require('./hachage')
 // import { detecterSubtle } from './chiffrage'
-import { chargerPemClePriveeEd25519 } from './certificats'
-
-const debug = debugLib('millegrilles:common:formatteurMessage')
+const { chargerPemClePriveeEd25519 } = require('./certificats')
 
 const BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----"
 const VERSION_SIGNATURE = 0x2
 
 // const {subtle: _subtle} = detecterSubtle()
 
-export function setHacheurs2(hacheurs) {
+function setHacheurs2(hacheurs) {
   setHacheurs(hacheurs)
 }
 
-export function splitPEMCerts(certs) {
+function splitPEMCerts(certs) {
   var splitCerts = certs.split(BEGIN_CERTIFICATE).map(c=>{
     return (BEGIN_CERTIFICATE + c).trim()
   })
   return splitCerts.slice(1)
 }
 
-export function formatterDateString(date) {
+function formatterDateString(date) {
   let year = date.getUTCFullYear();
   let month = date.getUTCMonth() + 1; if(month < 10) month = '0'+month;
   let day = date.getUTCDate(); if(day < 10) day = '0'+day;
@@ -35,7 +33,7 @@ export function formatterDateString(date) {
   return dateFormattee
 }
 
-export function hacherMessage(message, opts) {
+function hacherMessage(message, opts) {
   opts = opts || {}
 
   // Copier le message sans l'entete
@@ -187,15 +185,6 @@ export class FormatteurMessageEd25519 extends FormatteurMessage {
 
 }
 
-// export class FormatteurMessageSubtle extends FormatteurMessage {
-
-//   // Override avec signateur subtle
-//   async initialiserSignateur(cle) {
-//     return new SignateurMessageSubtle(cle)
-//   }
-
-// }
-
 export class SignateurMessageEd25519 {
 
   constructor(cle) {
@@ -240,111 +229,7 @@ export class SignateurMessageEd25519 {
 
 }
 
-// export class SignateurMessage {
-
-//   constructor(cle) {
-//     if(cle.privateKeyBytes) {
-//       // Format interne
-//       this.cle = cle
-//     } else {
-//       this.cle = chargerPemClePriveeEd25519(cle)
-//     }
-//   }
-
-//   async signer(message) {
-//     const copieMessage = {}
-//     for(let key in message) {
-//       if ( ! key.startsWith('_') ) {
-//         copieMessage[key] = message[key]
-//       }
-//     }
-//     // Stringify en json trie
-//     const encoder = new TextEncoder()
-//     const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage))))
-
-//     // Calculer digest du message
-//     const digestView = await calculerDigest(messageBuffer, 'sha2-512')
-
-//     const digestInfo = {digest: _=>forgeUtil.createBuffer(digestView, 'raw')}
-//     let pss = forgePss.create({
-//       md: forgeMd.sha512.create(),
-//       mgf: forgeMgf.mgf1.create(forgeMd.sha512.create()),
-//       saltLength: 64
-//     })
-
-//     // Signer avec la cle
-//     const signature = forgeUtil.encode64(this.cle.sign(digestInfo, pss));
-//     var signatureStringBuffer = this.cle.sign(digestInfo, pss)
-//     const versionBuffer = forgeUtil.createBuffer()
-//     versionBuffer.putByte(VERSION_SIGNATURE)
-//     versionBuffer.putBytes(signatureStringBuffer)
-//     signatureStringBuffer = versionBuffer.getBytes()
-//     console.debug("Version + Signature buffer digest : %O", versionBuffer)
-//     console.debug("Signature string buffer : %O", signatureStringBuffer)
-//     const signatureBuffer = Buffer.from(signatureStringBuffer, 'binary')
-
-//     signatureBuffer.set([VERSION_SIGNATURE], 0)
-//     signatureBuffer.set(signature, 1)
-
-//     const mbValeur = multibase.encode('base64', signatureBuffer)
-//     const mbString = String.fromCharCode.apply(null, mbValeur)
-
-//     return mbString
-//   }
-
-// }
-
-// export class SignateurMessageSubtle {
-
-//   constructor(cleSubtle) {
-//     this.cle = cleSubtle
-//   }
-
-//   async signer(message) {
-
-//     const copieMessage = {}
-//     for(let key in message) {
-//       if ( ! key.startsWith('_') ) {
-//         copieMessage[key] = message[key]
-//       }
-//     }
-//     // Stringify en json trie
-//     const messageString = stringify(copieMessage)
-
-//     const clePrivee = this.cle
-
-//     // Calcul taille salt:
-//     // http://bouncy-castle.1462172.n4.nabble.com/Is-Bouncy-Castle-SHA256withRSA-PSS-compatible-with-OpenSSL-RSA-PSS-padding-with-SHA256-digest-td4656843.html
-//     // Salt - changer pour 64, maximum supporte sur le iPhone
-//     const modulusLength = clePrivee.algorithm.modulusLength
-//     const saltLength = 64 // (modulusLength - 512) / 8 - 2
-
-//     const paramsSignature = {
-//       name: clePrivee.algorithm.name,
-//       saltLength,
-//     }
-
-//     const encoder = new TextEncoder()
-//     const contenuAb = encoder.encode(messageString)
-
-//     var signature = await _subtle.sign(paramsSignature, clePrivee, contenuAb)
-
-//     // Ajouter version
-//     const bufferVersion = new ArrayBuffer(1)
-//     const viewBuffer = new Uint8Array(bufferVersion)
-//     viewBuffer.set([VERSION_SIGNATURE], 0)
-//     // console.debug("Signature buffer info : %O", signature)
-//     signature = Buffer.concat([Buffer.from(bufferVersion), Buffer.from(signature)])
-
-//     const mbValeur = multibase.encode('base64', new Uint8Array(signature))
-//     const mbString = String.fromCharCode.apply(null, mbValeur)
-
-//     return mbString
-//   }
-
-// }
-
-export default {
+module.exports = {
   FormatteurMessage, FormatteurMessageEd25519, 
   hacherMessage, 
   SignateurMessageEd25519,
