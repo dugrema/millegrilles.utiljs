@@ -163,8 +163,13 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   // Verifier elements obligatoires
   if(typeof(domaine) !== 'string') throw new Error(`Domaine mauvais format ${domaine}`)
   if(typeof(hachage_bytes) !== 'string') throw new Error(`hachage_bytes mauvais format : ${hachage_bytes}`)
-  if(typeof(iv) !== 'string') throw new Error(`iv mauvais format : ${iv}`)
-  if(typeof(tag) !== 'string') throw new Error(`tag mauvais format : ${tag}`)
+
+  if(Buffer.isBuffer(iv) || ArrayBuffer.isView(iv)) {
+    iv = base64.encode(iv)
+  } else if(typeof(iv) !== 'string') throw new Error(`iv mauvais format : ${iv}`)
+  if(Buffer.isBuffer(tag) || ArrayBuffer.isView(tag)) {
+    tag = base64.encode(tag)
+  } else if(typeof(tag) !== 'string') throw new Error(`tag mauvais format : ${tag}`)
 
   // Chiffrer le password pour chaque certificat en parametres
   const cles = {}

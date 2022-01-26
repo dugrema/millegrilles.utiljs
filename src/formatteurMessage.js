@@ -76,7 +76,7 @@ class FormatteurMessage {
 
     // Le IDMG est place dans le champ organizationName du subject
     // Note: on assume que le certificat a deja ete valide.
-    this.idmg = this.cert.issuer.getField("O").value
+    this.idmg = this.cert.subject.getField("O").value
 
     // Permettre de conserver le contexte et attendre initialisation au besoin
     const this_inst = this
