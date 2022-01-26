@@ -16,7 +16,8 @@
   },
   "scripts": {
     "build": "webpack",
-    "test": "jest"
+    "test": "jest",
+    "prepare": "run-s build"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
