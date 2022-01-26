@@ -55,7 +55,7 @@ function hacherMessage(message, opts) {
 
 }
 
-export class FormatteurMessage {
+class FormatteurMessage {
 
   constructor(chainePem, cle, opts) {
     console.debug("FormatteurMessage opts : %O", opts)
@@ -176,7 +176,7 @@ export class FormatteurMessage {
   }
 }
 
-export class FormatteurMessageEd25519 extends FormatteurMessage {
+class FormatteurMessageEd25519 extends FormatteurMessage {
 
   // Override avec signateur ed25519
   async initialiserSignateur(cle) {
@@ -185,7 +185,7 @@ export class FormatteurMessageEd25519 extends FormatteurMessage {
 
 }
 
-export class SignateurMessageEd25519 {
+class SignateurMessageEd25519 {
 
   constructor(cle) {
     if (typeof(cle) === 'string') {

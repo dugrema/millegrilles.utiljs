@@ -8,7 +8,7 @@ const {
 } = require('./chiffrage.ed25519')
 const { getRandom } = require('./random')
 const stringify = require('json-stable-stringify')
-const unzip = require('zlib')
+// const unzip = require('zlib')
 
 // console.debug("Nodeforge : %O", nodeforge)
 
@@ -277,10 +277,11 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
     var documentString = await dechiffrer(ciphertext, password, iv, tag)
     if(opts.unzip) {
       documentString = await new Promise((resolve, reject)=>{
-        unzip(documentString, (err, buffer)=>{
-          if(err) reject(err)
-          resolve(buffer)
-        })
+        throw new Error('fix me')
+        // unzip(documentString, (err, buffer)=>{
+        //   if(err) reject(err)
+        //   resolve(buffer)
+        // })
       })
     }
     if(typeof(TextDecoder) !== 'undefined') {
