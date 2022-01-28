@@ -63,9 +63,14 @@ async function calculerDigest(valeur, hashingCode) {
     // Utiliser subtle dans le navigateur (native)
     digest = await hacheur.digest(valeur)
   } else {
-    console.warn("Hachage %s pas optimise, hacheurs : %O", hashingCode, Object.keys(_hacheurs))
-    // Fallback sur node-forge
-    digest = _calculerHachageForge(valeur, {hash: hashingCode})
+    const err = new Error(`Hachage ${hashingCode} non disponible`)
+    console.error("Erreur algo hachage : %O, algos: %O", err, _hacheurs)
+    throw err
+
+    // throw new Error(`Hachage ${hashingCode} non disponible`)
+    // console.warn("Hachage %s pas optimise, hacheurs : %O", hashingCode, Object.keys(_hacheurs))
+    // // Fallback sur node-forge
+    // digest = _calculerHachageForge(valeur, {hash: hashingCode})
   }
   const digestView = new Uint8Array(digest)
   return digestView
@@ -126,8 +131,11 @@ async function verifierHachage(hachageMultibase, valeur, opts) {
     // Utiliser subtle dans le navigateur (native)
     digestCalcule = await hacheur.digest(valeur)
   } else {
-    // Fallback sur node-forge
-    digestCalcule = _calculerHachageForge(valeur, {hash: algo})
+    const err = new Error(`Hachage ${hashingCode} non disponible`)
+    console.error("Erreur algo hachage : %O", err)
+    throw err
+    // // Fallback sur node-forge
+    // digestCalcule = _calculerHachageForge(valeur, {hash: algo})
   }
 
   digestCalcule = new Uint8Array(digestCalcule)

@@ -44,6 +44,72 @@ outputs.forEach(info => {
     delete bundle.output.libraryTarget;
   }
 
+  // web bundle
+  const web = Object.assign({}, common, {
+    mode: 'development',
+    target: 'web',
+    output: {
+      path: path.join(__dirname, 'dist'),
+      filename: info.filenameBase + '.webdev.js',
+      library: info.library || '[name]',
+      libraryTarget: info.libraryTarget || 'commonjs-module'
+    },
+    plugins: [
+      /*
+      new webpack.optimize.UglifyJsPlugin({
+        sourceMap: true,
+        compress: {
+          warnings: true
+        },
+        output: {
+          comments: false
+        }
+        //beautify: true
+      })
+      */
+    ]
+  });
+  if(info.library === null) {
+    delete web.output.library;
+  }
+  if(info.libraryTarget === null) {
+    delete web.output.libraryTarget;
+  }
+
+  // web bundle
+  const webworker = Object.assign({}, common, {
+    mode: 'development',
+    target: 'webworker',
+    output: {
+      path: path.join(__dirname, 'dist'),
+      filename: info.filenameBase + '.workerweb.js',
+      library: info.library || '[name]',
+      libraryTarget: info.libraryTarget || 'commonjs-module'
+    },
+    devtool: 'cheap-module-source-map',
+    plugins: [
+      /*
+      new webpack.optimize.UglifyJsPlugin({
+        sourceMap: true,
+        compress: {
+          warnings: true
+        },
+        output: {
+          comments: false
+        }
+        //beautify: true
+      })
+      */
+    ]
+  });
+  if(info.library === null) {
+    delete webworker.output.library;
+  }
+  if(info.libraryTarget === null) {
+    delete webworker.output.libraryTarget;
+  }
+
+
   // optimized and minified bundle
   const minify = Object.assign({}, common, {
     mode: 'production',
@@ -78,5 +144,8 @@ outputs.forEach(info => {
   }
 
   module.exports.push(bundle);  // Version dev
+  module.exports.push(web);     // web dev
+  module.exports.push(webworker);
   module.exports.push(minify);
+
 });

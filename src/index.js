@@ -25,6 +25,7 @@ const chiffrage = require('./chiffrage')
 const ed25519 = require('./chiffrage.ed25519')
 const hachage = require('./hachage')
 const idmg = require('./idmg')
+const random = require('./random')
 
 const exportVals = {
     constantes, forgecommon, formatteurMessage, validateurMessage, ed25519,
@@ -33,6 +34,7 @@ const exportVals = {
     ...chiffrage,
     ...hachage,
     ...idmg,
+    ...random,
 }
 
 module.exports = exportVals
