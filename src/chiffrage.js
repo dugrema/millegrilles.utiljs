@@ -89,7 +89,9 @@ async function dechiffrer(ciphertext, key, iv, tag, opts) {
   const resultat = await dechiffreur.decrypt(key, iv, ciphertext, tag, opts)
   if( ArrayBuffer.isView(resultat) ) return resultat
   else if( Buffer.isBuffer(resultat) ) {
-    resultat = new Uint8Array(Buffer.from(resultat))
+    return new Uint8Array(resultat)
+  } else if( Array.isArray(resultat) ) {
+    return new Uint8Array(resultat)
   } else {
     console.error("Format resultat incorrect : %O", resultat)
     throw new Error("Erreur interne - format resultat incorrect")
@@ -147,7 +149,7 @@ async function preparerDecipher(key, iv, opts) {
   // Convertir params multibase en buffer si applicable
   if(typeof(iv) === 'string') iv = multibase.decode(iv)
 
-  const decipher = await dechiffreur.getDecipher(key, iv)
+  const decipher = await dechiffreur.getDecipher(key, iv, opts)
 
   return decipher
 }
