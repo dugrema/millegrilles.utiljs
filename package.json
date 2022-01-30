@@ -5,19 +5,12 @@
   "author": "dugrema",
   "license": "MIT",
   "repository": "dugrema/millegrilles.utiljs",
-  "main": "dist/index.js",
   "source": "src/index.js",
-  "exports": {
-    "require": "./dist/index.js",
-    "default": "./dist/index.min.js"
-  },
   "engines": {
     "node": ">=16"
   },
   "scripts": {
-    "build": "webpack",
-    "test": "jest",
-    "prepare": "run-s build"
+    "test": "jest"
   },
   "devDependencies": {
     "babel-eslint": "^10.0.3",
@@ -36,12 +29,9 @@
     "gh-pages": "^2.2.0",
     "jest": "^27.4.7",
     "npm-run-all": "^4.1.5",
-    "prettier": "^2.0.4",
-    "webpack": "^4",
-    "webpack-cli": "^4"
+    "prettier": "^2.0.4"
   },
   "files": [
-    "dist",
     "src",
     "res"
   ],

@@ -231,12 +231,19 @@ class VerificateurHachage {
     const mb = multibase.decode(hachage)
     this.mh = multihash.decode(mb)
 
-    // Creer contexte de hachage
     const hashingCode = this.mh.name
-    // const fonctionHachage = _mapFonctionHachageForge(hashingCode)
-    // this._digester = fonctionHachage.create()
+
+    // Creer contexte de hachage
     const constructeur = _hacheurs[hashingCode]
-    this.ready = constructeur().then(digester=>this._digester=digester)
+    if(!constructeur) throw new Error(`Hachage ${hashingCode} non supporte`)
+    const hacheur = constructeur()
+    if(hacheur instanceof Promise) {
+      this.ready = hacheur.then(digester=>this._digester=digester)
+    } else {
+      this._digester = hacheur
+      this.ready = Promise.resolve(true)
+    }
+
     this._textEncoder = new TextEncoder()
   }
 
