@@ -283,7 +283,7 @@ class VerificateurHachage {
 
 }
 
- function hacherCertificat(cert) {
+function hacherCertificat(cert) {
   if(typeof(cert) === 'string') {
     cert = forgePki.certificateFromPem(cert)
   }
