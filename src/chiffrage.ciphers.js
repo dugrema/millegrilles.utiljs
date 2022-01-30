@@ -38,6 +38,12 @@ var _chiffrageSymmetrique = {}
 function setCiphers(chiffrageSymmetrique, opts) {
   opts = opts || {}
   console.debug("Chiffrage symmetrique : %O", chiffrageSymmetrique)
+
+  if(opts.DEBUG) {
+    const st = new Error("chargement cipher (OK)")
+    console.error("Info stacktrace chargement cipher : %O", st)
+  }
+
   if(opts.update === true) {
     _chiffrageSymmetrique = {..._chiffrageSymmetrique, ...chiffrageSymmetrique}
   } else {
