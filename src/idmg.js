@@ -98,7 +98,7 @@ async function getIdmg(pem) {
 
   const certClient = pki.certificateFromPem(pem)
 
-  console.debug(certClient)
+  // console.debug(certClient)
   if(certClient.issuer.hash === certClient.subject.hash) {
     // Self signed
     return encoderIdmg(pem)

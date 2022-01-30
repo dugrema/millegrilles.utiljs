@@ -58,7 +58,7 @@ function hacherMessage(message, opts) {
 class FormatteurMessage {
 
   constructor(chainePem, cle, opts) {
-    console.debug("FormatteurMessage opts : %O", opts)
+    // console.debug("FormatteurMessage opts : %O", opts)
     opts = opts || {}
 
     if(opts.hacheurs) setHacheurs2(opts.hacheurs)
@@ -86,7 +86,7 @@ class FormatteurMessage {
     this._promisesInit.push(
       hacherCertificat(this.cert)
         .then(fingerprint=>{
-          console.debug("Fingerprint certificat local recalcule: %s", fingerprint)
+          // console.debug("Fingerprint certificat local recalcule: %s", fingerprint)
           this_inst.fingerprint = fingerprint
         })
     )
@@ -189,9 +189,9 @@ class SignateurMessageEd25519 {
 
   constructor(cle) {
     if (typeof(cle) === 'string') {
-      console.debug("Charger cle PEM : %O", cle)
+      // console.debug("Charger cle PEM : %O", cle)
       this.cle = chargerPemClePriveeEd25519(cle)
-      console.debug('Cle privee chargee: %O', this.cle)
+      // console.debug('Cle privee chargee: %O', this.cle)
     } else if (cle.privateKeyBytes) {
       // Format interne
       this.cle = cle
