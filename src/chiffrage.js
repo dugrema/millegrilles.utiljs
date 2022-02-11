@@ -212,7 +212,7 @@ async function chiffrerDocument(doc, domaine, certificatChiffragePem, identifica
   opts = opts || {}
   const DEBUG = opts.DEBUG
 
-  if(DEBUG) console.debug("Chiffrer document %O", doc)
+  if(DEBUG) console.debug("Chiffrer document %O\nopts: %O", doc, opts)
   // if(DEBUG) console.debug("Verification du certificat pour chiffrer la cle")
   // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
 
@@ -242,8 +242,11 @@ async function chiffrerDocument(doc, domaine, certificatChiffragePem, identifica
   
   const cleSecrete = infoDocumentChiffre.secretKey
 
+  const certificatsAdditionnels = opts.certificats || []
+  const certificatsChiffrage = [certificatChiffragePem, ...certificatsAdditionnels]
+  console.debug("Certificats chiffrage : %O", certificatsChiffrage)
   const commandeMaitrecles = await preparerCommandeMaitrecles(
-    certificatChiffragePem, cleSecrete, domaine,
+    certificatsChiffrage, cleSecrete, domaine,
     meta.hachage_bytes, meta.iv, meta.tag, identificateurs_document,
     opts
   )
