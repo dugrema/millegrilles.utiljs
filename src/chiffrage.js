@@ -217,10 +217,13 @@ async function chiffrerDocument(doc, domaine, certificatChiffragePem, identifica
   // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
 
   var _doc = opts.nojson?doc:stringify(doc)  // string
-  if(typeof(TextEncoder) !== 'undefined') {
+  const typeBuffer = opts.type || 'utf-8'
+  if(typeBuffer == 'binary') {
+    // Rien a faire
+  } else if(typeof(TextEncoder) !== 'undefined') {
     _doc = new TextEncoder().encode(_doc)  // buffer
   } else {
-    _doc = Buffer.from(_doc, 'utf-8')
+    _doc = Buffer.from(_doc, typeBuffer)
   }
 
   const certForge = forgePki.certificateFromPem(certificatChiffragePem)
