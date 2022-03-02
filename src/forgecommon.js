@@ -66,7 +66,7 @@ class CertificateStore {
     this.DEBUG = opts.DEBUG
 
     let parsedCA;
-    if(opts.isPEM) {
+    if(opts.isPEM || typeof(caCert) === 'string') {
       parsedCA = pki.certificateFromPem(caCert)
     } else {
       parsedCA = caCert
