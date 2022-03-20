@@ -35,14 +35,14 @@
     "src",
     "res"
   ],
-  "peerDependencies": {
+  "dependencies": {
     "@dugrema/node-forge": "github:dugrema/forge#ed25519",
     "base-58": "^0.0.1",
     "curve25519-js": "^0.0.4",
     "ed2curve": "^0.3.0",
     "json-stable-stringify": "^1.0.1",
     "multibase": "^4.0.6",
-    "multiformats": "^9.6.2",
+    "multiformats": "^9.6.4",
     "multihashes": "^4.0.3",
     "uuid": "^8.3.2",
     "zlib": "^1.0.5"
