@@ -17,7 +17,7 @@ var _hacheurs = {}
 
 function setHacheurs(hacheurs, opts) {
   opts = opts || {}
-  console.debug("Set Hacheurs : %O", hacheurs)
+  if(opts.DEBUG) console.debug("Set Hacheurs : %O", hacheurs)
   if(opts.update) {
     _hacheurs = {..._hacheurs, ...hacheurs}
   } else {
@@ -176,10 +176,10 @@ class Hacheur {
     this.ready = Promise.resolve(true)
     if(inst instanceof Promise) {
       this.ready = inst.then( digester => {
-        console.debug("Digester ready : %O", digester)
+        if(opts.DEBUG) console.debug("Digester ready : %O", digester)
         this._digester = digester
       })
-      console.debug("ready const", this.ready)
+      if(opts.DEBUG) console.debug("ready const", this.ready)
     } else {
       this._digester = inst
     }
