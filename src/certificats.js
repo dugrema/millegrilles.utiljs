@@ -259,17 +259,17 @@ function publicKeyFromPrivateKey(privateKey) {
   return keyPair.publicKey
 }
 
-/**
- * 
- * @param {*} pem Certificat X.509 en format PEM.
- * @returns Fingerprint de la cle publique 
- */
-function fingerprintPublicKeyFromCertPem(pem) {
-  const cert = pki.certificateFromPem(pem)
-  const publicKeyBytes = cert.publicKey.publicKeyBytes
-  const fingerprintPk = String.fromCharCode.apply(null, multibase.encode("base64", publicKeyBytes))
-  return fingerprintPk
-}
+// /**
+//  * 
+//  * @param {*} pem Certificat X.509 en format PEM.
+//  * @returns Fingerprint de la cle publique 
+//  */
+// function fingerprintPublicKeyFromCertPem(pem) {
+//   const cert = pki.certificateFromPem(pem)
+//   const publicKeyBytes = cert.publicKey.publicKeyBytes
+//   const fingerprintPk = String.fromCharCode.apply(null, multibase.encode("base64", publicKeyBytes))
+//   return fingerprintPk
+// }
 
 function genererPassword(nbBytes) {
   nbBytes = nbBytes || 32
@@ -282,5 +282,5 @@ function genererPassword(nbBytes) {
 module.exports = {
   genererClePrivee, genererCertificatMilleGrille, genererCertificatIntermediaire, genererCsrNavigateur,
   chargerPemClePriveeEd25519, exporterPemClePriveeEd25519, 
-  fingerprintPublicKeyFromCertPem, genererPassword, 
+  genererPassword, 
 }
