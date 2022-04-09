@@ -64,7 +64,7 @@ async function deriverCleSecrete(clePrivee, clePublique, opts) {
 async function chiffrerCle(cleSecrete, clePublique, opts) {
     opts = opts || {}
 
-    if( ! (Buffer.isBuffer(clePublique) || cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
+    if( ! (Buffer.isBuffer(cleSecrete) || cleSecrete instanceof ArrayBuffer || ArrayBuffer.isView(cleSecrete)) ) {
         throw new Error("utiljs chiffrage.ed25519 chiffrerCle Format de cle secrete inconnu")
     }
 
