@@ -115,7 +115,7 @@ async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
         const clePubliquePeer = cleSecreteBuffer.slice(0, 32),
               cleChiffree = cleSecreteBuffer.slice(32, 64),
               tag = cleSecreteBuffer.slice(64, 80),
-              nonceHache = await (await hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
+              nonceHache = await (hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
         
         const cleSecreteDerivee = await deriverCleSecrete(clePrivee, clePubliquePeer, opts)
 
