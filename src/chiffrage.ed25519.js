@@ -21,11 +21,12 @@ const { base64 } = require('multiformats/bases/base64')
  */
 async function genererCleSecrete(clePublique, opts) {
     opts = opts || {}
+    const DEBUG = opts.DEBUG
     const formatPublicEd25519 = opts.ed25519!==undefined?opts.ed25519:true
 
-    console.debug("clePublique : %O, formatPublicEd25519: %O", clePublique, formatPublicEd25519)
+    if(DEBUG) console.debug("clePublique : %O, formatPublicEd25519: %O", clePublique, formatPublicEd25519)
     const clePubliqueX25519 = convertirPublicEd25519VersX25519(clePublique, {ed25519: formatPublicEd25519, ...opts})
-    console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
+    if(DEBUG) console.debug("clePubliqueX25519 : %O", clePubliqueX25519)
 
     // Generer une cle Ed25519 "peer" pour deriver une cle secrete
     const { publicKey, privateKey } = ed25519.generateKeyPair()
