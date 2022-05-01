@@ -213,14 +213,18 @@ function extraireExtensionsMillegrille(certificatForge) {
   try {
     const niveauxSecuriteList = certificatForge.extensions.filter(ext=>{return ext.id === '1.2.3.4.0'}).map(item=>{return item.value.split(',')})
     niveauxSecurite = niveauxSecuriteList.reduce((array, item)=>{return [...array, ...item]}, [])
-  } catch(err) {console.error("Erreur lecture niveaux de securite du certificat: %O", err)}
+  } catch(err) {
+    //console.error("Erreur lecture niveaux de securite du certificat: %O", err)
+  }
 
   // Extraire roles des extensions du certificat
   var roles = ''
   try {
     const rolesList = certificatForge.extensions.filter(ext=>{return ext.id === '1.2.3.4.1'}).map(item=>{return item.value.split(',')})
     roles = rolesList.reduce((array, item)=>{return [...array, ...item]}, [])
-  } catch(err) {console.error("Erreur lecture roles du certificat: %O", err)}
+  } catch(err) {
+    // console.debug("Erreur lecture roles du certificat: %O", err)
+  }
 
   // Extraire userId de certificat de navigateur
   var userId = ''
