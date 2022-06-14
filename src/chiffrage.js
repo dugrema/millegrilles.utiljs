@@ -14,6 +14,7 @@ const stringify = require('json-stable-stringify')
 
 const {hacher, hacherCertificat} = require('./hachage')
 const { getCipher } = require('./chiffrage.ciphers')
+const {extraireExtensionsMillegrille} = require('./forgecommon')
 
 //const { pki: forgePki } = nodeforge
 
@@ -160,7 +161,7 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   const DEBUG = opts.DEBUG,
         format = opts.format || 'mgs3'
 
-  if(DEBUG) console.debug("preparerCommandeMaitrecles PEM : %O", certificatsPem)
+  if(DEBUG) console.debug("preparerCommandeMaitrecles PEM !!: %O", certificatsPem)
 
   // Verifier elements obligatoires
   if(typeof(domaine) !== 'string') throw new Error(`Domaine mauvais format ${domaine}`)
@@ -186,10 +187,17 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
     const fingerprint = await hacherCertificat(certForge)
 
     // Choisir une partition de MaitreDesCles
-    let ou = certForge.subject.getField('OU')
-    if(ou && ou.value === 'maitrecles') {
+    let extensionsCertificat = extraireExtensionsMillegrille(certForge)
+    let roles = extensionsCertificat['roles']
+    if(roles && roles.includes('maitredescles')) {
       partition = fingerprint
+    } else {
+      throw new Error("Certificat n'a pas le role 'maitredescles'")
     }
+    // let ou = certForge.subject.getField('OU')
+    // if(ou && ou.value === 'maitrecles') {
+    //   partition = fingerprint
+    // }
 
     var passwordChiffre = null
     passwordChiffre = await chiffrerCleEd25519(password, publicKey)
