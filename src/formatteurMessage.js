@@ -154,7 +154,9 @@ class FormatteurMessage {
     entete = {...entete}  // Copie
     message['en-tete'] = entete
 
-    entete.domaine = domaineAction
+    if(domaineAction) {
+      entete.domaine = domaineAction
+    }
     if(opts.action) {
       entete.action = opts.action
     }
