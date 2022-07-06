@@ -183,16 +183,21 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
 
     // Chiffrer le mot de passe avec le certificat fourni
     const certForge = forgePki.certificateFromPem(pem)
+    const certCN = certForge.subject.getField('CN').value
     const publicKey = certForge.publicKey.publicKeyBytes
     const fingerprint = await hacherCertificat(certForge)
 
     // Choisir une partition de MaitreDesCles
     let extensionsCertificat = extraireExtensionsMillegrille(certForge)
     let roles = extensionsCertificat['roles']
-    if(roles && roles.includes('maitredescles')) {
+    if(certCN.toLowerCase() === 'millegrille') {
+      // Skip
+      continue
+    } else if(roles && roles.includes('maitredescles')) {
       partition = fingerprint
     } else {
-      throw new Error("Certificat n'a pas le role 'maitredescles'")
+      if(DEBUG) console.info("Certificat n'as pas le role maitre des cles\nCERT:%O\nEXT:%O", certForge.subject.attributes, extensionsCertificat)
+      throw new Error(`Certificat n'a pas le role 'maitredescles' (cn: ${certCN}, roles: ${roles})`)
     }
     // let ou = certForge.subject.getField('OU')
     // if(ou && ou.value === 'maitrecles') {
