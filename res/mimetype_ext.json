@@ -403,6 +403,7 @@
 	"video/x-mpeq2a": "mp2",
 	"video/x-ms-asf": "asf",
 	"video/x-ms-asf-plugin": "asx",
+	"video/x-ms-wmv": "wmv",
 	"video/x-msvideo": "avi",
 	"video/x-qtc": "qtc",
 	"video/x-scm": "scm",
