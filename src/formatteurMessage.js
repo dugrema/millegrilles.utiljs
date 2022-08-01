@@ -46,7 +46,8 @@ function hacherMessage(message, opts) {
 
   // Stringify en json trie, encoder en UTF_8
   const encoder = new TextEncoder()
-  const messageBuffer = encoder.encode(stringify(copieMessage))
+  // const messageBuffer = encoder.encode(stringify(copieMessage))
+  const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage).normalize())))
 
   // debug("hacherMessage: messageBuffer = %O", messageBuffer)
 
@@ -211,7 +212,7 @@ class SignateurMessageEd25519 {
     }
     // Stringify en json trie
     const encoder = new TextEncoder()
-    const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage))))
+    const messageBuffer = new Uint8Array(Buffer.from(encoder.encode(stringify(copieMessage).normalize())))
 
     // Calculer digest du message
     const digestView = await calculerDigest(messageBuffer, 'blake2b-512')

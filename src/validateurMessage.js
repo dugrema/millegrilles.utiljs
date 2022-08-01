@@ -33,7 +33,7 @@ async function verifierHachageMessage(message) {
 
   if(entete) {
     const hashTransactionRecu = entete['hachage_contenu']
-    const messageString = stringify(copieMessage)
+    const messageString = stringify(copieMessage).normalize()
 
     // Verifier le hachage, lance une Error en cas de mismatch
     debug("Message a verifier pour hachage :\n%O\n%s", copieMessage, hashTransactionRecu)
@@ -50,7 +50,7 @@ async function verifierSignatureMessage(message, certificat, opts) {
 
   if(typeof(message) === 'string') {
     const encoder = new TextEncoder()
-    message = encoder.encode(valeur)
+    message = encoder.encode(message.normalize())
   }
 
   const entete = message['en-tete']
@@ -62,7 +62,7 @@ async function verifierSignatureMessage(message, certificat, opts) {
       copieMessage[champ] = message[champ]
     }
   }
-  const messageString = stringify(copieMessage)
+  const messageString = stringify(copieMessage).normalize()
 
   debug("Message a verifier pour signature :\n%O\n: Signature : %s", copieMessage, signature)
 
