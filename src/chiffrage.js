@@ -101,7 +101,7 @@ async function dechiffrer(ciphertext, key, iv, tag, opts) {
 
 async function preparerCipher(opts) {
   opts = opts || {}
-  const cipherAlgo = opts.cipherAlgo || 'chacha20-poly1305',
+  const cipherAlgo = opts.cipherAlgo || 'mgs4',
         taillePassword = opts.taillePassword,
         clePubliqueEd25519 = opts.clePubliqueEd25519,
         digestAlgo = opts.digestAlgo || 'blake2b-512'
