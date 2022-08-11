@@ -77,13 +77,15 @@ async function chiffrerCle(cleSecrete, clePublique, opts) {
     const nonceHache = await (await hacher(clePubliquePeer, {hashingCode: 'blake2s-256', encoding: 'bytes'})).slice(0, 12)
 
     // Chiffrer le secret avec la nouvelle cle peer
-    const { ciphertext, tag } = await getCipher('chacha20-poly1305').encrypt(clePeer.cle, nonceHache, cleSecrete)
+    let { ciphertext, rawTag } = await getCipher('chacha20-poly1305').encrypt(clePeer.cle, cleSecrete, {nonce: nonceHache})
+    // if(typeof(tag) === 'string') tag = base64.decode(tag)
+    // console.warn("!!! ciphertext : %O, tag: %O", ciphertext, rawTag)
 
     // Encoder la cle peer publique et le ciphertext dans un meme buffer
     const cleChiffreeBuffer = new Uint8Array(80)
     cleChiffreeBuffer.set(clePubliquePeer, 0)   // 32 bytes cle publique x25519
     cleChiffreeBuffer.set(ciphertext, 32)       // 32 bytes cle secrete chiffree
-    cleChiffreeBuffer.set(tag, 64)              // 16 bytes authentication tag
+    cleChiffreeBuffer.set(rawTag, 64)              // 16 bytes authentication tag
     const cleChiffreeStr = base64.encode(cleChiffreeBuffer)
 
     return cleChiffreeStr

@@ -152,10 +152,12 @@ async function preparerDecipher(key, opts) {
 }
 
 
-async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, iv, tag, identificateurs_document, opts) {
+async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
-        format = opts.format || 'mgs3'
+        format = opts.format || 'mgs4'
+
+  // hachage_bytes, iv, tag,
 
   if(DEBUG) console.debug("preparerCommandeMaitrecles PEM !!: %O", certificatsPem)
 
@@ -163,12 +165,23 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   if(typeof(domaine) !== 'string') throw new Error(`Domaine mauvais format ${domaine}`)
   if(typeof(hachage_bytes) !== 'string') throw new Error(`hachage_bytes mauvais format : ${hachage_bytes}`)
 
-  if(Buffer.isBuffer(iv) || ArrayBuffer.isView(iv)) {
-    iv = base64.encode(iv)
-  } else if(typeof(iv) !== 'string') throw new Error(`iv mauvais format : ${iv}`)
-  if(Buffer.isBuffer(tag) || ArrayBuffer.isView(tag)) {
-    tag = base64.encode(tag)
-  } else if(typeof(tag) !== 'string') throw new Error(`tag mauvais format : ${tag}`)
+  // if(Buffer.isBuffer(iv) || ArrayBuffer.isView(iv)) {
+  //   iv = base64.encode(iv)
+  // } else if(typeof(iv) !== 'string') throw new Error(`iv mauvais format : ${iv}`)
+  // if(Buffer.isBuffer(tag) || ArrayBuffer.isView(tag)) {
+  //   tag = base64.encode(tag)
+  // } else if(typeof(tag) !== 'string') throw new Error(`tag mauvais format : ${tag}`)
+
+  const champsMeta = ['iv', 'nonce', 'tag', 'header']
+  const meta = champsMeta.reduce((acc, champ)=>{
+    let value = opts[champ]
+    if(champ === 'nonce') champ = 'iv'  // Utiliser iv pour la commande
+    if(value) {
+      if(typeof(value) !== 'string') value = base64.encode(value)
+      acc[champ] = value
+    }
+    return acc
+  }, {})
 
   // Chiffrer le password pour chaque certificat en parametres
   const cles = {}
@@ -211,7 +224,9 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   var commandeMaitrecles = {
     domaine, identificateurs_document,
     hachage_bytes, format,
-    iv, tag, cles, _partition: partition
+    // iv, tag, 
+    ...meta,
+    cles, _partition: partition
   }
 
   return commandeMaitrecles
