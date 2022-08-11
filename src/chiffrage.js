@@ -6,18 +6,11 @@ const {
   chiffrerCle: chiffrerCleEd25519,
   dechiffrerCle: dechiffrerCleEd25519,
 } = require('./chiffrage.ed25519')
-const { getRandom } = require('./random')
 const stringify = require('json-stable-stringify')
-// const unzip = require('zlib')
-
-// console.debug("Nodeforge : %O", nodeforge)
 
 const {hacher, hacherCertificat} = require('./hachage')
 const { getCipher } = require('./chiffrage.ciphers')
 const {extraireExtensionsMillegrille} = require('./forgecommon')
-
-//const { pki: forgePki } = nodeforge
-
 
 /**
  * Chiffrer une string utf-8 ou un Buffer
@@ -26,8 +19,7 @@ const {extraireExtensionsMillegrille} = require('./forgecommon')
  */
 async function chiffrer(data, opts) {
   opts = opts || {}
-  const cipherAlgo = opts.cipherAlgo || 'chacha20-poly1305',
-        taillePassword = opts.taillePassword,
+  const cipherAlgo = opts.cipherAlgo || opts.format || 'mgs4',
         clePubliqueEd25519 = opts.clePubliqueEd25519,
         digestAlgo = opts.digestAlgo || 'blake2b-512'
 
@@ -41,37 +33,51 @@ async function chiffrer(data, opts) {
   
   // Generer nonce, cle
   let secretKey, secretChiffre = null
-  if(clePubliqueEd25519) {
+  if(opts.key) {
+    secretKey = opts.key
+  } else if(clePubliqueEd25519) {
     // Generer cle secrete derivee avec la cle publique
     const cle = await genererCleSecreteEd25519(clePubliqueEd25519)
     secretKey = cle.cle
     secretChiffre = cle.peer
-  } else if(taillePassword) {
-    secretKey = await getRandom(taillePassword)
-  } else {
-    throw new Error(`Fournir information pour generer une cle secrete`)
   }
-  const iv = await getRandom(chiffreur.nonceSize)
 
   // Chiffrer
-  const { ciphertext, tag, hachage } = await chiffreur.encrypt(secretKey, iv, data, {digestAlgo, ...opts})
+  const resultat = await chiffreur.encrypt(data, {key: secretKey, digestAlgo, ...opts})
+
+  secretKey = secretKey || resultat.key
+
+  const champsMeta = ['iv', 'nonce', 'tag', 'header']
+  const meta = champsMeta.reduce((acc, champ)=>{
+    const value = resultat[champ]
+    if(value) {
+      if(typeof(value) === 'string') {
+        acc[champ] = value
+      } else {
+        acc[champ] = base64.encode(value)
+      }
+    }
+    return acc
+  }, {})
 
   return {
-    ciphertext,
+    ...resultat,
     secretKey,
     secretChiffre,
     meta: {
-      iv: base64.encode(iv),
-      tag: base64.encode(tag),
-      hachage_bytes: hachage,
+      ...meta,
+      // iv: base64.encode(iv),
+      // tag: base64.encode(tag),
+      hachage_bytes: resultat.hachage,
+      format: resultat.format,
     },
   }
 
 }
 
-async function dechiffrer(ciphertext, key, iv, tag, opts) {
+async function dechiffrer(key, ciphertext, opts) {
   opts = opts || {}
-  const algo = opts.algo || 'chacha20-poly1305'
+  const algo = opts.algo || opts.format || 'mgs4'
 
   if( ! key instanceof ArrayBuffer && ! ArrayBuffer.isView(key) ) {
     throw new Error(`La cle symmetrique doit etre un Buffer`)
@@ -83,26 +89,26 @@ async function dechiffrer(ciphertext, key, iv, tag, opts) {
   
   // Convertir params multibase en buffer si applicable
   if(typeof(ciphertext) === 'string') ciphertext = multibase.decode(ciphertext)
-  if(typeof(iv) === 'string') iv = multibase.decode(iv)
-  if(typeof(tag) === 'string') tag = multibase.decode(tag)
+  // if(typeof(iv) === 'string') iv = multibase.decode(iv)
+  // if(typeof(tag) === 'string') tag = multibase.decode(tag)
 
   // Faire un dechiffrage one-pass
-  const resultat = await dechiffreur.decrypt(key, iv, ciphertext, tag, opts)
-  if( ArrayBuffer.isView(resultat) ) return resultat
-  else if( Buffer.isBuffer(resultat) ) {
-    return new Uint8Array(resultat)
-  } else if( Array.isArray(resultat) ) {
-    return new Uint8Array(resultat)
-  } else {
-    console.error("Format resultat incorrect : %O", resultat)
-    throw new Error("Erreur interne - format resultat incorrect")
-  }
+  const resultat = await dechiffreur.decrypt(key, ciphertext, opts)
+  return Uint8Array.from(resultat)
+  // if( ArrayBuffer.isView(resultat) ) return resultat
+  // else if( Buffer.isBuffer(resultat) ) {
+  //   return new Uint8Array(resultat)
+  // } else if( Array.isArray(resultat) ) {
+  //   return new Uint8Array(resultat)
+  // } else {
+  //   console.error("Format resultat incorrect : %O", resultat)
+  //   throw new Error("Erreur interne - format resultat incorrect")
+  // }
 }
 
 async function preparerCipher(opts) {
   opts = opts || {}
-  const cipherAlgo = opts.cipherAlgo || 'mgs4',
-        taillePassword = opts.taillePassword,
+  const cipherAlgo = opts.cipherAlgo || opts.format || 'mgs4',
         clePubliqueEd25519 = opts.clePubliqueEd25519,
         digestAlgo = opts.digestAlgo || 'blake2b-512'
 
@@ -117,27 +123,20 @@ async function preparerCipher(opts) {
     const cle = await genererCleSecreteEd25519(clePubliqueEd25519)
     secretKey = cle.cle
     secretChiffre = cle.peer
-  } else if(taillePassword) {
-    secretKey = await getRandom(taillePassword)
-  } else {
-    throw new Error(`Fournir information pour generer une cle secrete`)
   }
-  const iv = await getRandom(chiffreur.nonceSize)
 
-  const cipher = await chiffreur.getCipher(secretKey, iv, {digestAlgo, ...opts})
+  const cipher = await chiffreur.getCipher(secretKey, {key: secretKey, digestAlgo, ...opts})
   
   return {
     cipher,
     secretKey,
     secretChiffre,
-    iv,
   }
-
 }
 
-async function preparerDecipher(key, iv, opts) {
+async function preparerDecipher(key, opts) {
   opts = opts || {}
-  const algo = opts.algo || 'chacha20-poly1305'
+  const algo = opts.algo || opts.format || 'mgs4'
 
   if( ! key instanceof ArrayBuffer && ! ArrayBuffer.isView(key) ) {
     throw new Error(`La cle symmetrique doit etre un Buffer`)
@@ -147,10 +146,7 @@ async function preparerDecipher(key, iv, opts) {
   const dechiffreur = getCipher(algo)
   if(!dechiffreur) throw new Error(`Algorithme de chiffrage (${algo}) non supporte`)
 
-  // Convertir params multibase en buffer si applicable
-  if(typeof(iv) === 'string') iv = multibase.decode(iv)
-
-  const decipher = await dechiffreur.getDecipher(key, iv, opts)
+  const decipher = await dechiffreur.getDecipher(key, opts)
 
   return decipher
 }
