@@ -125,7 +125,7 @@ async function dechiffrerCle(cleSecreteChiffree, clePrivee, opts) {
         const cleSecreteDerivee = await deriverCleSecrete(clePrivee, clePubliquePeer, opts)
 
         // Dechiffrer la cle
-        cleDechiffree = await getCipher('chacha20-poly1305').decrypt(cleSecreteDerivee, nonceHache, cleChiffree, tag)
+        cleDechiffree = await getCipher('chacha20-poly1305').decrypt(cleSecreteDerivee, cleChiffree, {nonce: nonceHache, tag})
     
     } else {
         throw new Error("chiffrage.ed25519 dechiffrerCle Param cleSecreteChiffree n'a pas une taille supportee (32 bytes ou 80 bytes)")
