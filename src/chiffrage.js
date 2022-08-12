@@ -118,14 +118,16 @@ async function preparerCipher(opts) {
   
   // Generer nonce, cle
   let secretKey, secretChiffre = null
-  if(clePubliqueEd25519) {
+  if(opts.key) {
+    secretKey = opts.key
+  } else if(clePubliqueEd25519) {
     // Generer cle secrete derivee avec la cle publique
     const cle = await genererCleSecreteEd25519(clePubliqueEd25519)
     secretKey = cle.cle
     secretChiffre = cle.peer
   }
 
-  const cipher = await chiffreur.getCipher(secretKey, {key: secretKey, digestAlgo, ...opts})
+  const cipher = await chiffreur.getCipher({key: secretKey, digestAlgo, ...opts})
   
   return {
     cipher,
