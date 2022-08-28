@@ -188,6 +188,7 @@ class Hacheur {
   }
 
   async update(data) {
+    await this.ready
     if(typeof(data) === 'string') {
       // data = forgeUtil.encodeUtf8(data)
       data = this._textEncoder.encode(data)
@@ -201,6 +202,7 @@ class Hacheur {
   async digest() {
     if(this._digest) return this._digest
 
+    await this.ready
     this._digest = await this._digester.finalize()
 
     this._digester = null
