@@ -234,35 +234,35 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   return commandeMaitrecles
 }
 
-async function chiffrerDocument(doc, domaine, certificatChiffragePem, identificateurs_document, opts) {
+async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
 
-  if(DEBUG) console.debug("Chiffrer document %O\nopts: %O", doc, opts)
+  if(DEBUG) console.debug("Chiffrer document %O\nopts: %O\nIdentificateurs_document: %O", docChamps, opts, identificateurs_document)
   // if(DEBUG) console.debug("Verification du certificat pour chiffrer la cle")
   // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
 
-  var _doc = opts.nojson?doc:stringify(doc)  // string
+  var docString = opts.nojson?docChamps:stringify(docChamps).normalize()  // string
   const typeBuffer = opts.type || 'utf-8'
   if(typeBuffer == 'binary') {
     // Rien a faire
   } else if(typeof(TextEncoder) !== 'undefined') {
-    _doc = new TextEncoder().encode(_doc)  // buffer
+    docString = new TextEncoder().encode(docString)  // buffer
   } else {
-    _doc = Buffer.from(_doc, typeBuffer)
+    docString = Buffer.from(docString, typeBuffer)
   }
 
   const certForge = forgePki.certificateFromPem(certificatChiffragePem)
   const fingerprintCert = await hacherCertificat(certForge)
   const clePublique = certForge.publicKey
   const optsChiffrage = {...opts}
-  if(clePublique.keyType === '1.3.101.112') {
+  if(!opts.clePubliqueEd25519 && clePublique.keyType === '1.3.101.112') {
     // Format EdDSA25519
     optsChiffrage.clePubliqueEd25519 = clePublique.publicKeyBytes
     console.debug("Cle publique Ed25519, opts : %O", optsChiffrage)
   }
 
-  const infoDocumentChiffre = await chiffrer(_doc, optsChiffrage)
+  const infoDocumentChiffre = await chiffrer(docString, optsChiffrage)
   const meta = infoDocumentChiffre.meta
 
   if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
@@ -275,9 +275,9 @@ async function chiffrerDocument(doc, domaine, certificatChiffragePem, identifica
   const certificatsChiffrage = [certificatChiffragePem, ...certificatsAdditionnels]
   console.debug("Certificats chiffrage : %O", certificatsChiffrage)
   const commandeMaitrecles = await preparerCommandeMaitrecles(
-    certificatsChiffrage, cleSecrete, domaine,
-    meta.hachage_bytes, meta.iv, meta.tag, identificateurs_document,
-    opts
+    certificatsChiffrage, cleSecrete, domaine, meta.hachage_bytes, 
+    identificateurs_document,
+    {...opts, ...meta}
   )
 
   // Override cle secrete chiffree pour certificat avec secret pour rederiver la cle (plus court)
@@ -286,7 +286,13 @@ async function chiffrerDocument(doc, domaine, certificatChiffragePem, identifica
     clesChiffrees[fingerprintCert] = infoDocumentChiffre.secretChiffre
   }
 
-  return {ciphertext: ciphertextString, commandeMaitrecles}
+  const docChiffre = {
+    data_chiffre: ciphertextString, 
+    header: infoDocumentChiffre.header, 
+    format: infoDocumentChiffre.format, 
+    ref_hachage_bytes: commandeMaitrecles.hachage_bytes,
+  }
+  return {doc: docChiffre, commandeMaitrecles}
 }
 
 async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
