@@ -340,6 +340,26 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
   return contenuDocument
 }
 
+async function updateChampsChiffres(docChamps, ref_hachage_bytes, secretKey, opts) {
+  opts = opts || {}
+  const DEBUG = opts.DEBUG
+  const cipherAlgo = opts.cipherAlgo || opts.format || 'mgs4',
+        digestAlgo = opts.digestAlgo || 'blake2b-512'
+  
+  if(DEBUG) console.debug("updateChampsChiffres Chiffrer document %O\nopts: %O", docChamps, opts)
+
+  const docBytes = new TextEncoder().encode(stringify(docChamps).normalize())
+  
+  // Chiffrer
+  const chiffreur = getCipher(cipherAlgo)
+  if(!chiffreur) throw new Error(`Algorithme de chiffrage (${cipherAlgo}) non supporte`)
+  const infoDocumentChiffre = await chiffreur.encrypt(docBytes, {key: secretKey, digestAlgo})
+  if(DEBUG) console.debug("updateChampsChiffres Document chiffre ", infoDocumentChiffre)
+  const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
+
+  return {data_chiffre: ciphertextString, header: infoDocumentChiffre.header, format: infoDocumentChiffre.format, ref_hachage_bytes}
+}
+
 async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   /* Permet de dechiffrer un ciphertext avec un minimum d'information. */
   opts = opts || {}
@@ -369,4 +389,5 @@ async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
 module.exports = {
   chiffrer, dechiffrer, preparerCipher, preparerDecipher, preparerCommandeMaitrecles, 
   chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
+  updateChampsChiffres,
 }
