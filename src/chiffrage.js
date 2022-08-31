@@ -360,6 +360,35 @@ async function updateChampsChiffres(docChamps, ref_hachage_bytes, secretKey, opt
   return {data_chiffre: ciphertextString, header: infoDocumentChiffre.header, format: infoDocumentChiffre.format, ref_hachage_bytes}
 }
 
+async function dechiffrerChampsChiffres(docChamps, cle) {
+    // Override champs au besoin (header, iv, tag, format, etc)
+  const cleCombinee = {...cle, ...docChamps}
+  
+  const bytesCiphertext = base64.decode(docChamps.data_chiffre)
+  const decipher = await preparerDecipher(cleCombinee.cleSecrete, cleCombinee)
+
+  // Dechiffrer message
+  let messageDechiffre = null
+  let outputDechiffre = await decipher.update(bytesCiphertext)
+  messageDechiffre = concatArrays(messageDechiffre, outputDechiffre)
+  const outputFinalize = await decipher.finalize()
+  messageDechiffre = concatArrays(messageDechiffre, outputFinalize.message)
+  
+  // Decoder bytes en JSON
+  const messageJson = new TextDecoder().decode(messageDechiffre)
+  return JSON.parse(messageJson)
+}
+
+function concatArrays(array1, array2) {
+  if(!array2 || array2.length === 0) return array1
+  if(!array1 || array1.length === 0) return array2
+  const lengthFinal = array1.length + array2.length
+  const arrayOut = new Uint8Array(lengthFinal)
+  arrayOut.set(array1)
+  arrayOut.set(array2, array1.length)
+  return arrayOut
+}
+
 async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
   /* Permet de dechiffrer un ciphertext avec un minimum d'information. */
   opts = opts || {}
@@ -389,5 +418,5 @@ async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
 module.exports = {
   chiffrer, dechiffrer, preparerCipher, preparerDecipher, preparerCommandeMaitrecles, 
   chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
-  updateChampsChiffres,
+  updateChampsChiffres, dechiffrerChampsChiffres,
 }
