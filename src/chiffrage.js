@@ -1,6 +1,6 @@
 const multibase = require('multibase')
 const { base64 } = require('multiformats/bases/base64')
-const { pki: forgePki } = require('@dugrema/node-forge')
+const { pki: forgePki, ed25519 } = require('@dugrema/node-forge')
 const { 
   genererCleSecrete: genererCleSecreteEd25519, 
   chiffrerCle: chiffrerCleEd25519,
@@ -11,6 +11,7 @@ const stringify = require('json-stable-stringify')
 const {hacher, hacherCertificat} = require('./hachage')
 const { getCipher } = require('./chiffrage.ciphers')
 const {extraireExtensionsMillegrille} = require('./forgecommon')
+const { SignateurMessageEd25519 } = require('./formatteurMessage')
 
 /**
  * Chiffrer une string utf-8 ou un Buffer
@@ -157,7 +158,8 @@ async function preparerDecipher(key, opts) {
 async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
-        format = opts.format || 'mgs4'
+        format = opts.format || 'mgs4',
+        userId = opts.userId
 
   // hachage_bytes, iv, tag,
 
@@ -222,13 +224,28 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
     cles[fingerprint] = passwordChiffre
   }
 
+  // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
+  // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
+  const identiteCle = { domaine, identificateurs_document, hachage_bytes }
+  if(userId) identiteCle.userId = userId
+
+  const cleEd25519 = ed25519.generateKeyPair({seed: password})
+  const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
+  await signateur.ready
+  const signatureIdentiteCle = await signateur.signer(identiteCle)
+  console.debug("Identite cle : %O", identiteCle)
+
   if(DEBUG) console.debug("Info password chiffres par fingerprint : %O", cles)
   var commandeMaitrecles = {
-    domaine, identificateurs_document,
-    hachage_bytes, format,
-    // iv, tag, 
-    ...meta,
-    cles, _partition: partition
+    // Information d'identification signee par cle (preuve de possession de cle secrete)
+    ...identiteCle,
+    signatureIdentiteCle,
+
+    // Information de dechfifrage
+    format,
+    ...meta,  // nonce, iv, tag, header, etc.
+    cles, 
+    _partition: partition
   }
 
   return commandeMaitrecles
