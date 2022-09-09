@@ -227,9 +227,11 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
   // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
   const identiteCle = { domaine, identificateurs_document, hachage_bytes }
-  if(userId) identiteCle.userId = userId
+  if(userId) identiteCle.user_id = userId
 
-  const cleEd25519 = ed25519.generateKeyPair({seed: password})
+  const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
+
+  const cleEd25519 = ed25519.generateKeyPair({seed: clePriveeEd25519})
   const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
   await signateur.ready
   const signatureIdentiteCle = await signateur.signer(identiteCle)
@@ -239,7 +241,7 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   var commandeMaitrecles = {
     // Information d'identification signee par cle (preuve de possession de cle secrete)
     ...identiteCle,
-    signatureIdentiteCle,
+    signature_identite: signatureIdentiteCle,
 
     // Information de dechfifrage
     format,

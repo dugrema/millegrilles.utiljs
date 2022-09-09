@@ -215,6 +215,11 @@ class Hacheur {
     const digest = await this.digest()
     const digestView = new Uint8Array(digest)
 
+    if(this.encoding === 'bytes') {
+      this.mh = digestView
+      return digestView
+    }
+
     // Creer le multihash
     const mhValeur = multihash.encode(digestView, this.hashingCode)
 
