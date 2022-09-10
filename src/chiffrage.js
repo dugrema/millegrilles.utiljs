@@ -128,7 +128,8 @@ async function preparerCipher(opts) {
     secretChiffre = cle.peer
   }
 
-  const cipher = await chiffreur.getCipher({key: secretKey, digestAlgo, ...opts})
+  const paramsCipher = {...opts, key: secretKey, digestAlgo}
+  const cipher = await chiffreur.getCipher(paramsCipher)
   
   return {
     cipher,
