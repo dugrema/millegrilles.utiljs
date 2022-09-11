@@ -366,11 +366,12 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
   return contenuDocument
 }
 
-async function updateChampsChiffres(docChamps, ref_hachage_bytes, secretKey, opts) {
+async function updateChampsChiffres(docChamps, secretKey, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
   const cipherAlgo = opts.cipherAlgo || opts.format || 'mgs4',
-        digestAlgo = opts.digestAlgo || 'blake2b-512'
+        digestAlgo = opts.digestAlgo || 'blake2b-512',
+        ref_hachage_bytes = opts.ref_hachage_bytes
   
   if(DEBUG) console.debug("updateChampsChiffres Chiffrer document %O\nopts: %O", docChamps, opts)
 
@@ -383,7 +384,10 @@ async function updateChampsChiffres(docChamps, ref_hachage_bytes, secretKey, opt
   if(DEBUG) console.debug("updateChampsChiffres Document chiffre ", infoDocumentChiffre)
   const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
 
-  return {data_chiffre: ciphertextString, header: infoDocumentChiffre.header, format: infoDocumentChiffre.format, ref_hachage_bytes}
+  const champsChiffres = {data_chiffre: ciphertextString, header: infoDocumentChiffre.header, format: infoDocumentChiffre.format}
+  if(ref_hachage_bytes) champsChiffres.ref_hachage_bytes = ref_hachage_bytes
+
+  return champsChiffres
 }
 
 async function dechiffrerChampsChiffres(docChamps, cle) {
