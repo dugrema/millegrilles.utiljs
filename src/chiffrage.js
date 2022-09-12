@@ -159,8 +159,8 @@ async function preparerDecipher(key, opts) {
 async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
-        format = opts.format || 'mgs4',
-        userId = opts.userId
+        format = opts.format || 'mgs4' //
+  // const userId = opts.userId
 
   // hachage_bytes, iv, tag,
 
@@ -228,7 +228,7 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
   // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
   const identiteCle = { domaine, identificateurs_document, hachage_bytes }
-  if(userId) identiteCle.user_id = userId
+  // if(userId) identiteCle.user_id = userId
 
   const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
 
