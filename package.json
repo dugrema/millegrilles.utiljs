@@ -1,6 +1,6 @@
 {
   "name": "millegrilles.utiljs",
-  "version": "2022.6.0",
+  "version": "2022.7.0",
   "description": "Javascript commun pour projets MilleGrilles (client, serveur)",
   "author": "dugrema",
   "license": "MIT",
@@ -31,7 +31,7 @@
     "ed2curve": "^0.3.0",
     "json-stable-stringify": "^1.0.1",
     "multibase": "^4.0.6",
-    "multiformats": "^9.8.1",
+    "multiformats": "^9.9.0",
     "multihashes": "^4.0.3",
     "uuid": "^9.0.0",
     "zlib": "^1.0.5"
