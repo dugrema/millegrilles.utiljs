@@ -1,4 +1,5 @@
 const multibase = require('multibase')
+const pako = 'pako'
 const { base64 } = require('multiformats/bases/base64')
 const { pki: forgePki, ed25519 } = require('@dugrema/node-forge')
 const { 
@@ -349,6 +350,10 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
         // })
       })
     }
+    if(opts.lzma) {
+      // Decompresser
+      documentString = pako.inflate(documentString).buffer
+    }    
     if(typeof(TextDecoder) !== 'undefined') {
       documentString = new TextDecoder().decode(documentString)  // buffer
     } else {
@@ -390,7 +395,8 @@ async function updateChampsChiffres(docChamps, secretKey, opts) {
   return champsChiffres
 }
 
-async function dechiffrerChampsChiffres(docChamps, cle) {
+async function dechiffrerChampsChiffres(docChamps, cle, opts) {
+  opts = opts || {}
     // Override champs au besoin (header, iv, tag, format, etc)
   const cleCombinee = {...cle, ...docChamps}
   
@@ -404,8 +410,17 @@ async function dechiffrerChampsChiffres(docChamps, cle) {
   const outputFinalize = await decipher.finalize()
   messageDechiffre = concatArrays(messageDechiffre, outputFinalize.message)
   
+  console.debug("dechiffrerChampsChiffres Contenu dechiffre bytes ", messageDechiffre)
+
+  // Decompresser
+  if(opts.lzma) {
+    messageDechiffre = pako.inflate(messageDechiffre).buffer
+    console.debug("dechiffrerChampsChiffres Contenu inflate LZMA ", messageDechiffre)
+  }
+
   // Decoder bytes en JSON
   const messageJson = new TextDecoder().decode(messageDechiffre)
+  console.debug("dechiffrerChampsChiffres Resultat dechiffre ", messageJson)
   return JSON.parse(messageJson)
 }
 

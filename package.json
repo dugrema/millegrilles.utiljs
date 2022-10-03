@@ -33,6 +33,7 @@
     "multibase": "^4.0.6",
     "multiformats": "^9.9.0",
     "multihashes": "^4.0.3",
+    "pako": "^2.0.4",
     "uuid": "^9.0.0",
     "zlib": "^1.0.5"
   }
