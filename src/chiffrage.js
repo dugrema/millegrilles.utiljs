@@ -237,7 +237,7 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
   await signateur.ready
   const signatureIdentiteCle = await signateur.signer(identiteCle)
-  console.debug("Identite cle : %O", identiteCle)
+  if(DEBUG) console.debug("Identite cle : %O", identiteCle)
 
   if(DEBUG) console.debug("Info password chiffres par fingerprint : %O", cles)
   var commandeMaitrecles = {
@@ -280,7 +280,7 @@ async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, iden
   if(!opts.clePubliqueEd25519 && clePublique.keyType === '1.3.101.112') {
     // Format EdDSA25519
     optsChiffrage.clePubliqueEd25519 = clePublique.publicKeyBytes
-    console.debug("Cle publique Ed25519, opts : %O", optsChiffrage)
+    if(DEBUG) console.debug("Cle publique Ed25519, opts : %O", optsChiffrage)
   }
 
   const infoDocumentChiffre = await chiffrer(docString, optsChiffrage)
@@ -294,7 +294,7 @@ async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, iden
 
   const certificatsAdditionnels = opts.certificats || []
   const certificatsChiffrage = [certificatChiffragePem, ...certificatsAdditionnels]
-  console.debug("Certificats chiffrage : %O", certificatsChiffrage)
+  if(DEBUG) console.debug("Certificats chiffrage : %O", certificatsChiffrage)
   const commandeMaitrecles = await preparerCommandeMaitrecles(
     certificatsChiffrage, cleSecrete, domaine, meta.hachage_bytes, 
     identificateurs_document,
@@ -397,6 +397,7 @@ async function updateChampsChiffres(docChamps, secretKey, opts) {
 
 async function dechiffrerChampsChiffres(docChamps, cle, opts) {
   opts = opts || {}
+  const DEBUG = opts.DEBUG
     // Override champs au besoin (header, iv, tag, format, etc)
   const cleCombinee = {...cle, ...docChamps}
   
@@ -410,17 +411,17 @@ async function dechiffrerChampsChiffres(docChamps, cle, opts) {
   const outputFinalize = await decipher.finalize()
   messageDechiffre = concatArrays(messageDechiffre, outputFinalize.message)
   
-  console.debug("dechiffrerChampsChiffres Contenu dechiffre bytes ", messageDechiffre)
+  if(DEBUG) console.debug("dechiffrerChampsChiffres Contenu dechiffre bytes ", messageDechiffre)
 
   // Decompresser
   if(opts.lzma) {
     messageDechiffre = pako.inflate(messageDechiffre).buffer
-    console.debug("dechiffrerChampsChiffres Contenu inflate LZMA ", messageDechiffre)
+    if(DEBUG) console.debug("dechiffrerChampsChiffres Contenu inflate LZMA ", messageDechiffre)
   }
 
   // Decoder bytes en JSON
   const messageJson = new TextDecoder().decode(messageDechiffre)
-  console.debug("dechiffrerChampsChiffres Resultat dechiffre ", messageJson)
+  if(DEBUG) console.debug("dechiffrerChampsChiffres Resultat dechiffre ", messageJson)
   return JSON.parse(messageJson)
 }
 
