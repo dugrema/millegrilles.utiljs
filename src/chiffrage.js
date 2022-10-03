@@ -1,5 +1,5 @@
 const multibase = require('multibase')
-const pako = 'pako'
+const pako = require('pako')
 const { base64 } = require('multiformats/bases/base64')
 const { pki: forgePki, ed25519 } = require('@dugrema/node-forge')
 const { 
