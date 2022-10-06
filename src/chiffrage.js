@@ -37,6 +37,7 @@ async function chiffrer(data, opts) {
   let secretKey, secretChiffre = null
   if(opts.key) {
     secretKey = opts.key
+    if(typeof(secretKey) === 'string') secretKey = multibase.decode(secretKey)
   } else if(clePubliqueEd25519) {
     // Generer cle secrete derivee avec la cle publique
     const cle = await genererCleSecreteEd25519(clePubliqueEd25519)
