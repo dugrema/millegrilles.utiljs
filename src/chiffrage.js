@@ -230,14 +230,15 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
   // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
   const identiteCle = { domaine, identificateurs_document, hachage_bytes }
-  // if(userId) identiteCle.user_id = userId
+  // // if(userId) identiteCle.user_id = userId
 
-  const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
+  // const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
 
-  const cleEd25519 = ed25519.generateKeyPair({seed: clePriveeEd25519})
-  const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
-  await signateur.ready
-  const signatureIdentiteCle = await signateur.signer(identiteCle)
+  // const cleEd25519 = ed25519.generateKeyPair({seed: clePriveeEd25519})
+  // const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
+  // await signateur.ready
+  // const signatureIdentiteCle = await signateur.signer(identiteCle)
+  const signatureIdentiteCle = await signerIdentiteCle(password, domaine, identificateurs_document, hachage_bytes)
   if(DEBUG) console.debug("Identite cle : %O", identiteCle)
 
   if(DEBUG) console.debug("Info password chiffres par fingerprint : %O", cles)
@@ -254,6 +255,22 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   }
 
   return commandeMaitrecles
+}
+
+async function signerIdentiteCle(password, domaine, identificateurs_document, hachage_bytes) {
+  // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
+  // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
+  const identiteCle = { domaine, identificateurs_document, hachage_bytes }
+  // if(userId) identiteCle.user_id = userId
+
+  const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
+
+  const cleEd25519 = ed25519.generateKeyPair({seed: clePriveeEd25519})
+  const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
+  await signateur.ready
+  const signatureIdentiteCle = await signateur.signer(identiteCle)
+
+  return signatureIdentiteCle
 }
 
 async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, identificateurs_document, opts) {
@@ -465,5 +482,5 @@ async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
 module.exports = {
   chiffrer, dechiffrer, preparerCipher, preparerDecipher, preparerCommandeMaitrecles, 
   chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
-  updateChampsChiffres, dechiffrerChampsChiffres,
+  signerIdentiteCle, updateChampsChiffres, dechiffrerChampsChiffres,
 }
