@@ -86,6 +86,7 @@ class CertificateStore {
 
     // Charger PEMs vers format forge
     const chaineCerts = chainePEM.map(item=>{
+      if(typeof(item) !== 'string') return item
       return pki.certificateFromPem(item)
     })
 
@@ -208,6 +209,11 @@ function verifierChallengeCertificat(certClient, messageSigne) {
 }
 
 function extraireExtensionsMillegrille(certificatForge) {
+
+  if(typeof(certificatForge) === 'string') {
+    certificatForge = pki.certificateFromPem(certificatForge)
+  }
+
   // Extraire niveaux de securite des extensions du certificat
   var niveauxSecurite = ''
   try {
