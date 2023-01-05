@@ -1,13 +1,13 @@
 {
   "name": "millegrilles.utiljs",
-  "version": "2022.9.0",
+  "version": "2023.0.0",
   "description": "Javascript commun pour projets MilleGrilles (client, serveur)",
   "author": "dugrema",
   "license": "MIT",
   "repository": "dugrema/millegrilles.utiljs",
   "source": "src/index.js",
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   },
   "scripts": {
     "test": "jest"
