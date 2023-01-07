@@ -7,7 +7,7 @@
   "repository": "dugrema/millegrilles.utiljs",
   "source": "src/index.js",
   "engines": {
-    "node": ">=18"
+    "node": ">=16"
   },
   "scripts": {
     "test": "jest"
