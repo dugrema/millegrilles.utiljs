@@ -433,7 +433,12 @@ async function dechiffrerChampsChiffres(docChamps, cle, opts) {
 
   // Decompresser
   if(opts.lzma) {
-    messageDechiffre = pako.inflate(messageDechiffre).buffer
+    try {
+      messageDechiffre = pako.inflate(messageDechiffre).buffer
+    } catch(err) {
+      console.error("Erreur decompression avec pako : ", err)
+      throw err
+    }
     if(DEBUG) console.debug("dechiffrerChampsChiffres Contenu inflate LZMA ", messageDechiffre)
   }
 
