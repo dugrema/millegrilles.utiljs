@@ -161,7 +161,8 @@ async function preparerDecipher(key, opts) {
 async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
-        format = opts.format || 'mgs4' //
+        format = opts.format || 'mgs4', //
+        peerPublic = opts.peer
   // const userId = opts.userId
 
   // hachage_bytes, iv, tag,
@@ -207,6 +208,7 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
     let extensionsCertificat = extraireExtensionsMillegrille(certForge)
     let roles = extensionsCertificat['roles']
     if(certCN.toLowerCase() === 'millegrille') {
+      if(peerPublic) cles[fingerprint] = peerPublic
       // Skip
       continue
     } else if(roles && roles.includes('maitredescles')) {
