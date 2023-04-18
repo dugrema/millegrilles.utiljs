@@ -1,114 +1,69 @@
-// const debug = require('debug')('millegrilles:common:validateurMessage')
-// const stringify = require('json-stable-stringify')
-// const multibase = require('multibase')
-// const {util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf} = require('node-forge')
-// const {verifierHachage, calculerDigest} = require('./hachage')
-const debug = require('debug')('millegrilles:common:validateurMessage')
-const stringify = require('json-stable-stringify')
-const multibase = require('multibase')
-const { util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf } = require('@dugrema/node-forge')
+const { ed25519 } = require('@dugrema/node-forge')
+const { hacherMessage } = require('./formatteurMessage')
 
-const {verifierHachage, calculerDigest} = require('./hachage')
+/// Verifie un message, lance une Error si une des etapes echoue
+async function verifierMessage(message, opts) {
+  opts = opts || {}
+  const certificat = opts.certificat
 
-// const debug = debugLib('millegrilles:common:validateurMessage')
-// const { util: forgeUtil, pss: forgePss, md: forgeMd, mgf: forgeMgf } = nodeforge
+  if(certificat) {
+    // S'assurer que la pubkey du certificat correspond a pubkey
+    verifierCorrespondanceCertificat(message.pubkey, certificat)
+  }
 
-function verifierMessage(message, certificat) {
-  return Promise.all([
-    verifierHachageMessage(message),
-    verifierSignatureMessage(message, certificat)
-  ])
+  // Verifier la signature du message (id, pubkey, sig)
+  verifierSignatureMessage(message)
+
+  // Verifier le hachage du message hash(pubkey, estampille, kind, contenu, routage) === id
+  await verifierHachageMessage(message)
+ 
+  return true
+}
+
+function verifierCorrespondanceCertificat(pubkey, certificat) {
+  const pubKeyCertificat = certificat.publicKey.publicKeyBytes.toString('hex')
+  console.debug("Comparer pubkey %O avec %O", pubkey, pubKeyCertificat)
+  if(pubkey !== pubKeyCertificat) {
+    throw new Error("Erreur verification pubkey (mismatch certificat)")
+  }
+  return true
 }
 
 async function verifierHachageMessage(message) {
-  // Valider le contenu du message - hachage et signature
-  const entete = message['en-tete']
 
-  const copieMessage = {}
-  for(let champ in message) {
-    if(champ !== 'en-tete' && ! champ.startsWith('_') ) {
-      copieMessage[champ] = message[champ]
-    }
+  const messageHachage = [
+    message.pubkey,
+    message.estampille,
+    message.kind,
+    message.contenu,
+  ]
+  if(message.routage) {
+    messageHachage.push(message.routage)
   }
 
-  if(entete) {
-    const hashTransactionRecu = entete['hachage_contenu']
-    const messageString = stringify(copieMessage).normalize()
-
-    // Verifier le hachage, lance une Error en cas de mismatch
-    debug("Message a verifier pour hachage :\n%O\n%s", copieMessage, hashTransactionRecu)
-    return await verifierHachage(hashTransactionRecu, messageString)
-
-  } else {
-    debug("Reponse sans entete -- on verifie la signature");
-    throw new Error("Message sans entete")
+  // Hacher le message
+  const hachageMessage = await hacherMessage(messageHachage)
+  if(message.id !== hachageMessage) {
+    throw new Error('Hachage invalide')
   }
+  return true
 }
 
-async function verifierSignatureMessage(message, certificat, opts) {
+function verifierSignatureMessage(message, opts) {
   opts = opts || {}
 
-  if(typeof(message) === 'string') {
-    const encoder = new TextEncoder()
-    message = encoder.encode(message.normalize())
+  const sig = Buffer.from(message.sig, 'hex'),
+        pubkey = Buffer.from(message.pubkey, 'hex'),
+        hachage = Buffer.from(message.id, 'hex')
+
+  // Verifier la signature. Lance une exception si invalide
+  // const resultat = publicKey.verify(hachage, sig)
+  const resultat = ed25519.verify({publicKey: pubkey, message: hachage, signature: sig})
+  if( resultat !== true ) {
+    throw new Error("Erreur verification signature")
   }
 
-  const entete = message['en-tete']
-  const signature = message['_signature']
-
-  const copieMessage = {}
-  for(let champ in message) {
-    if( ! champ.startsWith('_') ) {
-      copieMessage[champ] = message[champ]
-    }
-  }
-  const messageString = stringify(copieMessage).normalize()
-
-  debug("Message a verifier pour signature :\n%O\n: Signature : %s", copieMessage, signature)
-
-  var signatureBuffer = multibase.decode(signature)
-  const versionSignature = signatureBuffer[0]
-
-  if(versionSignature === 1) {
-    signatureBuffer = signatureBuffer.slice(1)
-    signatureBuffer = String.fromCharCode.apply(null, signatureBuffer)
-    const publicKey = certificat.publicKey
-
-    const pss = forgePss.create({
-      md: forgeMd.sha512.create(),
-      mgf: forgeMgf.mgf1.create(forgeMd.sha512.create()),
-      saltLength: 64,
-    })
-
-    const digestView = await calculerDigest(messageString, 'sha2-512')
-    const digestInfo = forgeUtil.createBuffer(digestView, 'raw').getBytes()
-
-    // Verifier la signature. Lance une exception si invalide (retourne false quand valide... mouais)
-    publicKey.verify(digestInfo, signatureBuffer, pss)
-
-    // Aucune exception, la signature est valide
-    return true
-  } else if(versionSignature === 2) {
-    signatureBuffer = signatureBuffer.slice(1)
-    debug("Signature v2 buffer : %O", signatureBuffer)
-    const publicKey = certificat.publicKey
-
-    // Stringify en json trie
-    const messageBuffer = new Uint8Array(Buffer.from(messageString))
-    // Calculer digest du message
-    const digestView = await calculerDigest(messageBuffer, 'blake2b-512')
-    
-    // Verifier la signature. Lance une exception si invalide
-    const resultat = publicKey.verify(digestView, signatureBuffer)
-    if( resultat !== true ) {
-      throw new Error("Erreur verification signature")
-    }
-
-    return true
-
-  } else {
-    throw new Error(`Version signature ${versionSignature} non supportee`)
-  }
+  return resultat
 }
 
 module.exports = {
