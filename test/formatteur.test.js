@@ -1,13 +1,12 @@
-const fs = require('fs')
-const stringify = require('json-stable-stringify')
-
 require('./hachage.config')
+
+const fs = require('fs')
 
 const { FormatteurMessage } = require('../src/formatteurMessage')
 const { verifierMessage } = require('../src/validateurMessage')
 const forgecommon = require('../src/forgecommon')
 const { pki } = require('@dugrema/node-forge')
-const {KIND_DOCUMENT, KIND_REQUETE, KIND_COMMANDE, KIND_TRANSACTION, KIND_REPONSE, KIND_EVENEMENT, KIND_REPONSE_CHIFFREE} = require('../src/constantes')
+const {KIND_DOCUMENT, KIND_REQUETE} = require('../src/constantes')
 
 const certPem = new TextDecoder().decode(fs.readFileSync('/var/opt/millegrilles/secrets/pki.instance.cert')),
       clePem = new TextDecoder().decode(fs.readFileSync('/var/opt/millegrilles/secrets/pki.instance.key')),
