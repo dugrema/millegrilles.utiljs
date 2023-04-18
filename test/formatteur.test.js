@@ -75,6 +75,7 @@ test('verifier message', async () => {
     
     const resultat = await verifierMessage(messageFormatte)
     console.debug("Resultat verification : ", resultat)
+    await expect(resultat).toBe(true)
 })
 
 test('verifier message certificat', async () => {
@@ -84,6 +85,13 @@ test('verifier message certificat', async () => {
     const messageFormatte = await formatteur.formatterMessage(KIND_DOCUMENT, message)
     const resultat = await verifierMessage(messageFormatte, {certificat: formatteur.cert})
     console.debug("Resultat verification : ", resultat)
+    await expect(resultat).toBe(true)
+})
+
+test('verifier message sample1', async () => {
+    const certificat = pki.certificateFromPem(certPem)
+    const resultat = await verifierMessage(MESSAGE_SAMPLE1, {certificat})
+    await expect(resultat).toBe(true)
 })
 
 test('verifier message id corrompu', async () => {
@@ -112,7 +120,7 @@ const MESSAGE_SAMPLE1 = {
     pubkey: '7cae0bdd47f3e6a1a08a73eee76fc12d94846205eb70c457ae16e5a1ac408dd6',
     estampille: 1681837817,
     kind: 1,
-    contenu: stringify({texte:"Bonsoir",valeur:2}),
+    contenu: '{"texte":"Bonsoir","valeur":2}',
     routage: { action: 'ActionDummy', domaine: 'DomaineDummy' },
     id: '8da02266610cbc42ffd8b5638fb62048a6db40ecbc179ca86a63e8deda68740d',
     sig: '9f6fc2eb233cbbbaff2c2e852c146bf7b9227004ed0173d2a9057d4e567de850cdb1a51ce187f4e61001d4c1d29c2687183135be4f417aae583123efc6bdd806'
