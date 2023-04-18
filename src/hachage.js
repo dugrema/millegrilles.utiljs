@@ -290,17 +290,20 @@ class VerificateurHachage {
 
 }
 
-function hacherCertificat(cert) {
+async function hacherCertificat(cert) {
   if(typeof(cert) === 'string') {
     cert = forgePki.certificateFromPem(cert)
   }
-  const derBytes = forgeAsn1.toDer(forgePki.certificateToAsn1(cert)).getBytes()
-  const certArray = new Uint8Array(Buffer.from(derBytes, 'binary'))
+  return cert.publicKey.publicKeyBytes.toString('hex')
 
-  // console.debug("!!! Hacher certificat : %O, hacheurs disponibles : %O", certArray, Object.keys(_hacheurs))
+  // Ancienne methode
+  // const derBytes = forgeAsn1.toDer(forgePki.certificateToAsn1(cert)).getBytes()
+  // const certArray = new Uint8Array(Buffer.from(derBytes, 'binary'))
 
-  // Retourner promise
-  return hacher(certArray, {hashingCode: 'blake2s-256'})
+  // // console.debug("!!! Hacher certificat : %O, hacheurs disponibles : %O", certArray, Object.keys(_hacheurs))
+
+  // // Retourner promise
+  // return hacher(certArray, {hashingCode: 'blake2s-256'})
 }
 
 module.exports = {
