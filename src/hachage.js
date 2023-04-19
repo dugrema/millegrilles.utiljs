@@ -294,7 +294,12 @@ async function hacherCertificat(cert) {
   if(typeof(cert) === 'string') {
     cert = forgePki.certificateFromPem(cert)
   }
-  return cert.publicKey.publicKeyBytes.toString('hex')
+
+  const publicKeyBytes = cert.publicKey.publicKeyBytes
+  const publicKeyString = Buffer.from(publicKeyBytes).toString('hex')
+  // console.debug("!!! hachage.hacherCertificat bytes %O -> %O", publicKeyBytes, publicKeyString)
+
+  return publicKeyString
 
   // Ancienne methode
   // const derBytes = forgeAsn1.toDer(forgePki.certificateToAsn1(cert)).getBytes()

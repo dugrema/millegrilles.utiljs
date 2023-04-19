@@ -58,7 +58,7 @@ class FormatteurMessage {
 
     // Charger une instance de certificat
     this.cert = forgePki.certificateFromPem(this.chainePem[0])
-    this.publicKey = this.cert.publicKey.publicKeyBytes.toString('hex')
+    this.publicKey = Buffer.from(this.cert.publicKey.publicKeyBytes).toString('hex')
 
     // Le IDMG est place dans le champ organizationName du subject
     // Note: on assume que le certificat a deja ete valide.
@@ -72,7 +72,7 @@ class FormatteurMessage {
     this._promisesInit.push(
       hacherCertificat(this.cert)
         .then(fingerprint=>{
-          // console.debug("Fingerprint certificat local recalcule: %s", fingerprint)
+          if(opts.DEBUG) console.debug("FormatteurMessage Fingerprint certificat local recalcule: %s", fingerprint)
           this_inst.fingerprint = fingerprint
         })
     )
@@ -125,6 +125,8 @@ class FormatteurMessage {
     const messageString = stringify(message)
 
     const estampille = Math.floor(new Date() / 1000)
+
+    if(opts.DEBUG) console.debug("utiljs.formatteruMessage._formatterInfoMessage publicKey ", this.publicKey)
 
     const messageHachage = [
       this.publicKey,

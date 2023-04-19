@@ -21,8 +21,8 @@ async function verifierMessage(message, opts) {
 }
 
 function verifierCorrespondanceCertificat(pubkey, certificat) {
-  const pubKeyCertificat = certificat.publicKey.publicKeyBytes.toString('hex')
-  console.debug("Comparer pubkey %O avec %O", pubkey, pubKeyCertificat)
+  const pubKeyCertificat = Buffer.from(certificat.publicKey.publicKeyBytes).toString('hex')
+  // console.debug("Comparer pubkey %O avec %O", pubkey, pubKeyCertificat)
   if(pubkey !== pubKeyCertificat) {
     throw new Error("Erreur verification pubkey (mismatch certificat)")
   }
