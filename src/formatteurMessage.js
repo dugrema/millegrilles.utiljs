@@ -31,21 +31,24 @@ async function hacherMessage(message, opts) {
   opts = opts || {}
 
   const hashingCode = opts.hashingCode || 'blake2s-256',
-        encoding = opts.encoding || 'base16'
+        encodingParam = opts.encoding || 'hex'
+  let bytesOnly = opts.bytesOnly
 
   // Stringify en json trie, encoder en UTF_8
   const messageString = stringify(message).normalize()
   const messageBuffer = new Uint8Array(Buffer.from(new TextEncoder().encode(messageString)))
 
   // Retourner promise de hachage
-  const hachage = await hacher(messageBuffer, {hashingCode, encoding, ...opts})
+  let encoding = encodingParam
+  if(encodingParam === 'hex') {
+    encoding = 'base16'
+    bytesOnly = true
+  }
+  const hachage = await hacher(messageBuffer, {hashingCode, encoding, ...opts, bytesOnly})
+  if(opts.bytesOnly) return hachage
+  if(encodingParam === 'hex') return Buffer.from(hachage).toString('hex')
 
-  // Enlever 9 premiers caracteres (1 multibase marker, 4 bytes multihash)
-  const hachageTronque = hachage.slice(9)
-
-  if(opts.bytesOnly) return Buffer.from(hachageTronque, 'hex')
-
-  return hachageTronque
+  return hachage
 }
 
 class FormatteurMessage {
