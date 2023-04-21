@@ -269,6 +269,6 @@ function genererPassword(nbBytes) {
 
 module.exports = {
   genererClePrivee, genererCertificatMilleGrille, genererCertificatIntermediaire, genererCsrNavigateur,
-  chargerPemClePriveeEd25519, exporterPemClePriveeEd25519, 
+  chargerPemClePriveeEd25519, exporterPemClePriveeEd25519, publicKeyFromPrivateKey,
   genererPassword,
 }
