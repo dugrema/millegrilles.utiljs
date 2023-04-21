@@ -30,15 +30,22 @@ function formatterDateString(date) {
 async function hacherMessage(message, opts) {
   opts = opts || {}
 
+  const hashingCode = opts.hashingCode || 'blake2s-256',
+        encoding = opts.encoding || 'base16'
+
   // Stringify en json trie, encoder en UTF_8
   const messageString = stringify(message).normalize()
   const messageBuffer = new Uint8Array(Buffer.from(new TextEncoder().encode(messageString)))
 
   // Retourner promise de hachage
-  const hachage = await hacher(messageBuffer, {hashingCode: 'blake2s-256', encoding: 'base16', ...opts})
+  const hachage = await hacher(messageBuffer, {hashingCode, encoding, ...opts})
 
   // Enlever 9 premiers caracteres (1 multibase marker, 4 bytes multihash)
-  return hachage.slice(9)
+  const hachageTronque = hachage.slice(9)
+
+  if(opts.bytesOnly) return Buffer.from(hachageTronque, 'hex')
+
+  return hachageTronque
 }
 
 class FormatteurMessage {
