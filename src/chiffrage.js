@@ -14,6 +14,8 @@ const { getCipher } = require('./chiffrage.ciphers')
 const {extraireExtensionsMillegrille} = require('./forgecommon')
 const { SignateurMessageEd25519 } = require('./formatteurMessage')
 
+const VERSION_SIGNATURE = 0x2
+
 /**
  * Chiffrer une string utf-8 ou un Buffer
  * @param {*} contenu 
@@ -263,16 +265,27 @@ async function signerIdentiteCle(password, domaine, identificateurs_document, ha
   // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
   // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
   const identiteCle = { domaine, identificateurs_document, hachage_bytes }
+  const identiteCleString = stringify(identiteCle).normalize()
+  const identiteCleBuffer = new Uint8Array(Buffer.from(new TextEncoder().encode(identiteCleString)))
+  const identiteCleHachage = await hacher(identiteCleBuffer, {bytesOnly: true, hashingCode: 'blake2s-256'})
   // if(userId) identiteCle.user_id = userId
 
-  const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
+  const clePriveeEd25519 = await hacher(password, {bytesOnly: true, hashingCode: 'blake2s-256'})
 
   const cleEd25519 = ed25519.generateKeyPair({seed: clePriveeEd25519})
   const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
   await signateur.ready
-  const signatureIdentiteCle = await signateur.signer(identiteCle)
+  const signatureIdentiteCle = await signateur.signer(identiteCleHachage)
 
-  return signatureIdentiteCle
+  // Convertir en multibase, ajouter byte version 1 a position 0
+  const bufferSignature = Buffer.from(signatureIdentiteCle, 'hex')
+  const arraySignature = new Uint8Array(65)
+  arraySignature.set([VERSION_SIGNATURE], 0)
+  arraySignature.set(bufferSignature, 1)
+  const mbValeur = multibase.encode('base64', arraySignature)
+  const mbString = String.fromCharCode.apply(null, mbValeur)
+
+  return mbString
 }
 
 async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, identificateurs_document, opts) {
