@@ -267,7 +267,7 @@ async function signerIdentiteCle(password, domaine, identificateurs_document, ha
   const identiteCle = { domaine, identificateurs_document, hachage_bytes }
   const identiteCleString = stringify(identiteCle).normalize()
   const identiteCleBuffer = new Uint8Array(Buffer.from(new TextEncoder().encode(identiteCleString)))
-  const identiteCleHachage = await hacher(identiteCleBuffer, {bytesOnly: true, hashingCode: 'blake2s-256'})
+  const identiteCleHachage = await hacher(identiteCleBuffer, {bytesOnly: true, hashingCode: 'blake2b-512'})
   // if(userId) identiteCle.user_id = userId
 
   const clePriveeEd25519 = await hacher(password, {bytesOnly: true, hashingCode: 'blake2s-256'})
