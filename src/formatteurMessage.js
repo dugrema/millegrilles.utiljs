@@ -3,7 +3,7 @@ const { pki: forgePki } = require('@dugrema/node-forge')
 
 const { hacher, hacherCertificat, setHacheurs } = require('./hachage')
 const { chargerPemClePriveeEd25519 } = require('./certificats')
-const { KIND_REQUETE, KIND_COMMANDE, KIND_TRANSACTION, KIND_EVENEMENT } = require('./constantes')
+const { KIND_REQUETE, KIND_COMMANDE, KIND_TRANSACTION, KIND_EVENEMENT, MESSAGE_KINDS } = require('./constantes')
 
 const BEGIN_CERTIFICATE = "-----BEGIN CERTIFICATE-----"
 
@@ -132,6 +132,8 @@ class FormatteurMessage {
   async _formatterInfoMessage(kind, message, opts) {
     opts = opts || {}
 
+    const dechiffrage = opts.dechiffrage
+
     const messageString = stringify(message)
 
     const estampille = Math.floor(new Date() / 1000)
@@ -152,7 +154,12 @@ class FormatteurMessage {
       contenu: messageString,
     }
 
-    if([KIND_REQUETE, KIND_COMMANDE, KIND_TRANSACTION, KIND_EVENEMENT].includes(kind)) {
+    if([
+      MESSAGE_KINDS.KIND_REQUETE, MESSAGE_KINDS.KIND_COMMANDE, MESSAGE_KINDS.KIND_TRANSACTION, 
+      MESSAGE_KINDS.KIND_EVENEMENT, MESSAGE_KINDS.KIND_TRANSACTION_MIGREE, 
+      MESSAGE_KINDS.KIND_TRANSACTION_MIGREE, MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE
+      ].includes(kind)) 
+      {
       // Routage
       const routage = {}
       if(opts.action) routage.action = opts.action
@@ -161,6 +168,15 @@ class FormatteurMessage {
 
       enveloppeMessage.routage = routage
       messageHachage.push(routage)
+    }
+
+    if([MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE]) {
+      enveloppeMessage.origine = this.idmg
+      messageHachage.push(this.idmg)
+
+      if(!dechiffrage) throw new Error('kind:8 requiert un contenu chiffre et element dechiffrage')
+      enveloppeMessage.dechiffrage = dechiffrage
+      messageHachage.push(dechiffrage)
     }
 
     // Calculer hachage (id)
@@ -173,6 +189,9 @@ class FormatteurMessage {
 
     if(opts.attacherCertificat || opts.ajouterCertificat) {
       enveloppeMessage['certificat'] = this.chainePem
+      if([MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE].includes(kind)) {
+        console.warn('utiljs.FormatteurMessage todo - ajouter CA')
+      }
     }
 
     return enveloppeMessage
