@@ -37,8 +37,10 @@ async function verifierHachageMessage(message) {
     message.kind,
     message.contenu,
   ]
-  if(message.routage) {
-    messageHachage.push(message.routage)
+
+  const champsOptionnels = ['routage', 'origine', 'dechiffrage']
+  for (const champ of champsOptionnels) {
+    if(message[champ]) messageHachage.push(message[champ])
   }
 
   // Hacher le message
