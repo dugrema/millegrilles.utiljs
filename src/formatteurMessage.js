@@ -170,7 +170,7 @@ class FormatteurMessage {
       messageHachage.push(routage)
     }
 
-    if([MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE]) {
+    if(MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE === kind) {
       enveloppeMessage.origine = this.idmg
       messageHachage.push(this.idmg)
 

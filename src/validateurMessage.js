@@ -1,6 +1,8 @@
 const { ed25519 } = require('@dugrema/node-forge')
 const { hacherMessage } = require('./formatteurMessage')
 
+const CHAMPS_OPTIONNELS = ['routage', 'origine', 'dechiffrage']
+
 /// Verifie un message, lance une Error si une des etapes echoue
 async function verifierMessage(message, opts) {
   opts = opts || {}
@@ -38,8 +40,7 @@ async function verifierHachageMessage(message) {
     message.contenu,
   ]
 
-  const champsOptionnels = ['routage', 'origine', 'dechiffrage']
-  for (const champ of champsOptionnels) {
+  for (const champ of CHAMPS_OPTIONNELS) {
     if(message[champ]) messageHachage.push(message[champ])
   }
 
