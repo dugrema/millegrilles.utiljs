@@ -56,6 +56,7 @@ class FormatteurMessage {
   constructor(chainePem, cle, opts) {
     opts = opts || {}
 
+    this.caPem = opts.ca
     if(opts.hacheurs) setHacheurs2(opts.hacheurs)
 
     if( typeof(chainePem) === 'string' ) {
@@ -134,7 +135,12 @@ class FormatteurMessage {
 
     const dechiffrage = opts.dechiffrage
 
-    const messageString = stringify(message)
+    if(kind === MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE) {
+      if(typeof(message) !== 'string') throw new Error('Le message kind=8 doit etre en format string (compresse/chiffre base64)')
+      var messageString = message
+    } else {
+      var messageString = stringify(message)
+    }
 
     const estampille = Math.floor(new Date() / 1000)
 
@@ -190,7 +196,8 @@ class FormatteurMessage {
     if(opts.attacherCertificat || opts.ajouterCertificat) {
       enveloppeMessage['certificat'] = this.chainePem
       if([MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE].includes(kind)) {
-        console.warn('utiljs.FormatteurMessage todo - ajouter CA')
+        const caPem = opts.ca || this.caPem
+        if(caPem) enveloppeMessage.millegrille = caPem
       }
     }
 

@@ -6,7 +6,7 @@ const { FormatteurMessage } = require('../src/formatteurMessage')
 const { verifierMessage } = require('../src/validateurMessage')
 const forgecommon = require('../src/forgecommon')
 const { pki } = require('@dugrema/node-forge')
-const {KIND_DOCUMENT, KIND_REQUETE} = require('../src/constantes')
+const {KIND_DOCUMENT, KIND_REQUETE, MESSAGE_KINDS} = require('../src/constantes')
 
 const certPem = new TextDecoder().decode(fs.readFileSync('/var/opt/millegrilles/secrets/pki.instance.cert')),
       clePem = new TextDecoder().decode(fs.readFileSync('/var/opt/millegrilles/secrets/pki.instance.key')),
@@ -57,6 +57,39 @@ test('formatterRoutage', async () => {
     expect(messageFormatte.kind).toBe(KIND_REQUETE)
     expect(messageFormatte.contenu).toBe('{"texte":"Bonsoir","valeur":2}')
     expect(messageFormatte.routage).toEqual({domaine: 'DomaineDummy', action: 'ActionDummy'})
+})
+
+
+test('formatterInterMillegrille', async () => {
+    console.debug("Formatter")
+
+    const formatteur = new FormatteurMessage(chainePem, clePem, {})
+    const ready = await formatteur.ready()
+
+    console.debug("Formatteur ready : ", ready)
+    
+    // Message arbitraire compresse/chiffre et expose en base64
+    const message = 'Aj3YIkrBNQ8AlXDskM92//gD4nc7SIXesRgUWO1x5R ... mmE3j3HES8Ewe0Fa//b+/6X5tOocacWjeTHd2vMi88wQw'
+    const dechiffrage = {'dummy': true}  // Contenu utilise pour dechiffrage, ex format: mgs4, header, etc.
+
+    const messageFormatte = await formatteur.formatterMessage(
+        MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE, message, 
+        {domaine: 'DomaineDummy', action: 'ActionDummy', dechiffrage, ajouterCertificat: true}
+    )
+    
+    console.debug("formatterInterMillegrille Message formatte : ", messageFormatte)
+
+    expect(messageFormatte.id).toBeDefined()
+    expect(messageFormatte.sig).toBeDefined()
+    expect(messageFormatte.estampille).toBeDefined()
+    expect(messageFormatte.kind).toBe(MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE)
+    expect(messageFormatte.contenu).toBe(message)
+    expect(messageFormatte.routage).toEqual({domaine: 'DomaineDummy', action: 'ActionDummy'})
+    expect(messageFormatte.dechiffrage).toEqual(dechiffrage)
+
+    const resultat = await verifierMessage(messageFormatte)
+    console.debug("formatterInterMillegrille Resultat verification : ", resultat)
+    await expect(resultat).toBe(true)
 })
 
 test('formatter kind manquant', async () => {
