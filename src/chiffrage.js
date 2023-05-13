@@ -346,7 +346,10 @@ async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, iden
     format: infoDocumentChiffre.format, 
     ref_hachage_bytes: commandeMaitrecles.hachage_bytes,
   }
-  return {doc: docChiffre, commandeMaitrecles}
+
+  const resultat = {doc: docChiffre, commandeMaitrecles}
+  if(opts.retourSecret === true) resultat.cleSecrete = cleSecrete
+  return resultat
 }
 
 async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
