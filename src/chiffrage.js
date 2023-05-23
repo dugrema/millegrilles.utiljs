@@ -306,6 +306,10 @@ async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, iden
     docString = Buffer.from(docString, typeBuffer)
   }
 
+  if(opts.lzma) {
+    docString = pako.deflate(docString, {gzip: true})
+  }
+
   const certForge = forgePki.certificateFromPem(certificatChiffragePem)
   const fingerprintCert = await hacherCertificat(certForge)
   const clePublique = certForge.publicKey
@@ -416,8 +420,11 @@ async function updateChampsChiffres(docChamps, secretKey, opts) {
   
   if(DEBUG) console.debug("updateChampsChiffres Chiffrer document %O\nopts: %O", docChamps, opts)
 
-  const docBytes = new TextEncoder().encode(stringify(docChamps).normalize())
-  
+  let docBytes = new TextEncoder().encode(stringify(docChamps).normalize())
+  if(opts.lzma) {
+    docBytes = pako.deflate(docBytes, {gzip: true})
+  }
+
   // Chiffrer
   const chiffreur = getCipher(cipherAlgo)
   if(!chiffreur) throw new Error(`Algorithme de chiffrage (${cipherAlgo}) non supporte`)
