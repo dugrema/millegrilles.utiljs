@@ -193,6 +193,10 @@ class FormatteurMessage {
     const signature = this.signateurMessage.signer(hachageMessage)
     enveloppeMessage.sig = signature
 
+    if(opts.attachements) {
+      enveloppeMessage.attachements = attachements
+    }
+
     if(opts.attacherCertificat || opts.ajouterCertificat) {
       enveloppeMessage['certificat'] = this.chainePem
       if([MESSAGE_KINDS.KIND_COMMANDE_INTER_MILLEGRILLE].includes(kind)) {
