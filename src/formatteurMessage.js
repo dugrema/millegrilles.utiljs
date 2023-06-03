@@ -194,7 +194,7 @@ class FormatteurMessage {
     enveloppeMessage.sig = signature
 
     if(opts.attachements) {
-      enveloppeMessage.attachements = attachements
+      enveloppeMessage.attachements = opts.attachements
     }
 
     if(opts.attacherCertificat || opts.ajouterCertificat) {
