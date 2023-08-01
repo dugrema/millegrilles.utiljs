@@ -232,6 +232,17 @@ function extraireExtensionsMillegrille(certificatForge) {
     // console.debug("Erreur lecture roles du certificat: %O", err)
   }
 
+  var domaines = ''
+  try {
+    const ext = certificatForge.extensions.filter(ext=>{return ext.id === '1.2.3.4.2'})
+    if(ext && ext[0]) {
+      domaines = ext[0].value
+      if(domaines) domaines = domaines.split(',')
+    }
+  } catch(err) {
+    // console.error("Erreur lecture domaines du certificat: %O", err)
+  }
+
   // Extraire userId de certificat de navigateur
   var userId = ''
   try {
@@ -272,7 +283,7 @@ function extraireExtensionsMillegrille(certificatForge) {
     // console.error("Erreur lecture delegationsSousDomaines du certificat: %O", err)
   }
 
-  return {roles, niveauxSecurite, userId, delegationGlobale, delegationsDomaines, delegationsSousDomaines}
+  return {roles, niveauxSecurite, userId, delegationGlobale, delegationsDomaines, delegationsSousDomaines, domaines}
 }
 
 function comparerArraybuffers(buf1, buf2) {
