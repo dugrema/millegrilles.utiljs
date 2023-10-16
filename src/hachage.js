@@ -201,18 +201,19 @@ class Hacheur {
   }
 
   async digest() {
-    if(this.DEBUG) console.debug("Digest pre-calcule : %O", this._digest)
+    if(this.DEBUG) console.debug("digest pre-calcule : %O", this._digest)
     if(this._digest) return this._digest
 
     await this.ready
     this._digest = await this._digester.finalize()
-    if(this.DEBUG) console.debug("Digest calcule : %O", this._digest)
+    if(this.DEBUG) console.debug("digest calcule : %O", this._digest)
 
     if(! 'reset' in this._digester) this._digester = null
     return this._digest
   }
 
   async finalize() {
+    if(this.DEBUG) console.debug("finalize : %O", this._digest)
     if(this.mh) return this.mh
 
     const digest = await this.digest()
@@ -230,12 +231,15 @@ class Hacheur {
     var mbValeur = multibase.encode(this.encoding, mhValeur)
     this.mh = String.fromCharCode.apply(null, mbValeur)
 
+    if(this.DEBUG) console.debug("finalize mh string : %O", this.mh)
+
     return this.mh
   }
 
   async reset() {
     if(this.DEBUG) console.debug("Hacheur reset ", this)
     this._digest = null
+    this.mh = null
     if('reset' in this._digester) {
       await this.ready
       await this._digester.reset()
