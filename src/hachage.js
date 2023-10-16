@@ -205,7 +205,7 @@ class Hacheur {
     await this.ready
     this._digest = await this._digester.finalize()
 
-    this._digester = null
+    if(! 'reset' in this._digester) this._digester = null
     return this._digest
   }
 
@@ -231,7 +231,13 @@ class Hacheur {
   }
 
   async reset() {
-    await this._digester.reset()
+    this._digest = null
+    if('reset' in this._digester) {
+      await this.ready
+      await this._digester.reset()
+    } else {
+      throw new Error('reset non supporte')
+    }
   }
 }
 
