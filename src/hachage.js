@@ -166,6 +166,7 @@ function comparerArraybuffers(buf1, buf2) {
 class Hacheur {
   constructor(opts) {
     opts = opts || {}
+    this.DEBUG = opts.DEBUG || false
     this.encoding = opts.encoding || 'base58btc'
     this.hashingCode = opts.hashingCode || opts.hash || 'blake2b-512'
     this._digest = null
@@ -176,10 +177,10 @@ class Hacheur {
     this.ready = Promise.resolve(true)
     if(inst instanceof Promise) {
       this.ready = inst.then( digester => {
-        if(opts.DEBUG) console.debug("Digester ready : %O", digester)
+        if(this.DEBUG) console.debug("Digester ready : %O", digester)
         this._digester = digester
       })
-      if(opts.DEBUG) console.debug("ready const", this.ready)
+      if(this.DEBUG) console.debug("ready const", this.ready)
     } else {
       this._digester = inst
     }
@@ -200,10 +201,12 @@ class Hacheur {
   }
 
   async digest() {
+    if(this.DEBUG) console.debug("Digest pre-calcule : %O", this._digest)
     if(this._digest) return this._digest
 
     await this.ready
     this._digest = await this._digester.finalize()
+    if(this.DEBUG) console.debug("Digest calcule : %O", this._digest)
 
     if(! 'reset' in this._digester) this._digester = null
     return this._digest
@@ -231,10 +234,12 @@ class Hacheur {
   }
 
   async reset() {
+    if(this.DEBUG) console.debug("Hacheur reset ", this)
     this._digest = null
     if('reset' in this._digester) {
       await this.ready
       await this._digester.reset()
+      if(this.DEBUG) console.debug("Hacheur resette ", this)
     } else {
       throw new Error('reset non supporte')
     }
