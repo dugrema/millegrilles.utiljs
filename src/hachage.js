@@ -229,6 +229,10 @@ class Hacheur {
 
     return this.mh
   }
+
+  async reset() {
+    await this._digester.reset()
+  }
 }
 
 // Faire await .ready avant d'utiliser
