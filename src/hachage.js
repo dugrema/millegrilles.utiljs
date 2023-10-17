@@ -330,10 +330,20 @@ async function hacherCertificat(cert) {
   // return hacher(certArray, {hashingCode: 'blake2s-256'})
 }
 
+// Decoder un hachage multihash
+function decoderHachage(hachage) {
+  const mbBytes = multibase.decode(hachage)
+  const mh = multihash.decode(mbBytes)
+
+  const algo = mh.name
+  const digest = mh.digest
+  return { algo, digest }
+}
+
 module.exports = {
   hacher, verifierHachage, 
   Hacheur, VerificateurHachage, 
   calculerDigest,
   hacherCertificat, comparerArraybuffers,
-  setHacheurs,
+  setHacheurs, decoderHachage,
 }
