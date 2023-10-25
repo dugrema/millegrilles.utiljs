@@ -539,6 +539,7 @@
 	"viv": "video/vnd.vivo",
 	"vivo": "video/vivo",
 	"vivo": "video/vnd.vivo",
+	"vob": "video/mpeg",
 	"vmd": "application/vocaltec-media-desc",
 	"vmf": "application/vocaltec-media-file",
 	"voc": "audio/voc",
