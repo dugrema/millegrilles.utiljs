@@ -8,8 +8,6 @@ const { genererCleSecrete: genererCleSecreteEd25519, chiffrerCle, dechiffrerCle,
 
 const SIGNATURE_DOMAINES_V1 = 1
 
-const CONST_FORMAT_MGS4 = 'mgs4'
-
 /**
  * Signature utilisee par la commande ajouterCleDomaines du maitre des cles. Permet de
  * garantir que l'originateur de la commande avait en sa possession la cle secrete.
@@ -28,7 +26,6 @@ class SignatureDomaines {
         /** 
          * Peer public, represente la cle chiffree pour le CA, format Ed25519.
          * Doit etre converti en X25519 pour deriver le secret en utilisant la cle privee du CA + blake2s.
-         * Sert aussi a valider signature_ca.
          */
         this.peer_ca = null
 
@@ -63,8 +60,11 @@ class SignatureDomaines {
      * @param {Uint8Array} cleSecrete 
      */
     async verifierSecrete(cleSecrete) {
+        // Convertir la cle secrete Ed25519 en cle publique.
         const clePublique = publicKeyFromPrivateKey(cleSecrete)
+        // Verifier la signature des domaines
         const resultat = await verifierDomaines(this.domaines, this.signature, clePublique)
+
         if(!resultat) throw new Error("Signature invalide")
     }
 
@@ -114,6 +114,13 @@ async function signerDomaines(domaines, clePriveeEd25519) {
     return signatureBase64
 }
 
+/**
+ * Verifie la signature des domaines en utilisant une cle publique.
+ * @param {array} domaines 
+ * @param {string} signatureString 
+ * @param {Object} clePublique 
+ * @returns 
+ */
 async function verifierDomaines(domaines, signatureString, clePublique) {
     const domainesBytes = new TextEncoder().encode(JSON.stringify(domaines))
     const domainesHachage = await calculerDigest(domainesBytes, 'blake2s-256')
@@ -131,8 +138,8 @@ async function verifierDomaines(domaines, signatureString, clePublique) {
 }
 
 class DechiffrageInterMillegrilles {
-    constructor() {
-        this.cles = null
+    constructor(cles) {
+        this.cles = cles
         this.format = null
         this.nonce = null
         this.verification = null
@@ -157,44 +164,30 @@ class CommandeAjouterCleDomaines {
 
     /**
      * 
-     * @param {DechiffrageInterMillegrilles} cles 
+     * @param {Object} cles 
      * @param {SignatureDomaines} signature 
-     * @param {Object} identificateurs_documents 
      */
-    constructor(informationDechiffrage, signature, identificateursDocuments) {
-        this.cles = informationDechiffrage
+    constructor(cles, signature) {
+        this.cles = cles
         this.signature = signature
-        this.identificateurs_documents = identificateursDocuments
     }
 
 }
 
-async function creerCommandeAjouterCle(signature, cleSecrete, clesPubliques, opts) {
-    opts = opts || {}
-
+async function creerCommandeAjouterCle(signature, cleSecrete, clesPubliques) {
     if(!signature) throw new Error("Aucune signature")
     if(!cleSecrete) throw new Error("Aucunes cle secrete")
     if(!clesPubliques || clesPubliques.length === 0) throw new Error("Aucunes cles publiques")
 
-    const { nonce, verification } = opts
-    const identificateursDocuments = opts.identificateursDocuments || {}
-
     // Chiffrer la cle secrete pour chaque cle publique
     const clesChiffrees = {}
     for(const clePublique of clesPubliques) {
-        // const clePubliqueBytes = multibase.decode('m'+clePublique)
         const clePubliqueBytes = Buffer.from(clePublique, 'hex')
         const cleChiffree = await chiffrerCle(cleSecrete, clePubliqueBytes, {ed25519: true})
         clesChiffrees[clePublique] = cleChiffree.slice(1)  // Retirer le 'm' (format mulitbase)
     }
 
-    const informationDechiffrage = new DechiffrageInterMillegrilles()
-    informationDechiffrage.cles = clesChiffrees
-    informationDechiffrage.format = opts.format || CONST_FORMAT_MGS4
-    informationDechiffrage.nonce = nonce
-    informationDechiffrage.verification = verification
-
-    return new CommandeAjouterCleDomaines(informationDechiffrage, signature, identificateursDocuments)
+    return new CommandeAjouterCleDomaines(clesChiffrees, signature)
 }
 
 async function genererCleSecrete(clePublique, opts) {

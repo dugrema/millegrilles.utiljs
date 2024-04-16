@@ -3,7 +3,7 @@ const { generateKeyPair, sharedKey } = require('curve25519-js')
 
 const { ed25519 } = require('@dugrema/node-forge')
 
-const { SignatureDomaines, creerCommandeAjouterCle, genererCleSecrete } = require('../src/maitredescles')
+const { SignatureDomaines, creerCommandeAjouterCle, genererCleSecrete, DechiffrageInterMillegrilles } = require('../src/maitredescles')
 const { publicKeyFromPrivateKey } = require('../src/certificats')
 
 require('./hachage.config')
@@ -65,11 +65,12 @@ test('test creer commande maitre des cles', async () => {
     const commande = await creerCommandeAjouterCle(signature, cleSecrete, clesPubliques, opts)
     console.debug("Commande maitre des cles %O", commande)
 
-    const cleChiffree = commande.cles.cles['Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM']
+    const cleChiffree = commande.cles['Q83AI9ItX54QfRoGk0V9NdHRDrfSHHIRkvVvXeQGZdM']
     expect(cleChiffree).not.toBeNull()
 
     // Dechiffrer la cle
-    const cleDechiffree = await commande.cles.dechiffrer(clePubliqueEd25519Hex, clePrivee3Ed25519)
+    const informationCles = new DechiffrageInterMillegrilles(commande.cles)
+    const cleDechiffree = await informationCles.dechiffrer(clePubliqueEd25519Hex, clePrivee3Ed25519)
     console.debug("Cle dechiffree : %O\nCle secrete: %O", new Uint8Array(cleDechiffree), cleSecrete)
     expect(new Uint8Array(cleDechiffree)).toEqual(cleSecrete)
 })
