@@ -24,8 +24,8 @@ class SignatureDomaines {
         this.version = opts.version || SIGNATURE_DOMAINES_V1
 
         /** 
-         * Peer public, represente la cle chiffree pour le CA, format Ed25519.
-         * Doit etre converti en X25519 pour deriver le secret en utilisant la cle privee du CA + blake2s.
+         * Peer public, represente la cle chiffree pour le CA, format X25519.
+         * Deriver le secret en utilisant la cle privee du CA + blake2s.
          */
         this.peer_ca = null
 
@@ -43,14 +43,14 @@ class SignatureDomaines {
      * @param {Uint8Array} cleSecrete Bytes d'une cle secrete
      */
     async signerEd25519(peerPrive, cleSecrete) {
-        // Effectuer les signatures
-        // this.signature_ca = await signerDomaines(this.domaines, peerPrive)
+        // Effectuer la signature en utilisant la cle secrete
         this.signature = await signerDomaines(this.domaines, cleSecrete)
         
-        // Calculer la version publique du peer, conserver en base64
+        // Calculer la version publique du peer et convertir en X25519. Conserver en base64.
         const clePubliqueCa = publicKeyFromPrivateKey(peerPrive)
+        const cleChiffreeX25519Bytes = convertPublicKey(clePubliqueCa.publicKeyBytes)
         this.peer_ca = String.fromCharCode
-            .apply(null, multibase.encode('base64', clePubliqueCa.publicKeyBytes))
+            .apply(null, multibase.encode('base64', cleChiffreeX25519Bytes))
             .slice(1)  // Retirer le 'm' d'encodage multibase
     }
 
@@ -80,10 +80,7 @@ class SignatureDomaines {
     }
 
     async getCleDechiffreeCa(clePriveeCa) {
-        // Convertir la cle Ed25519 publique en X25519
-        const cleChiffreeEd25519Bytes = multibase.decode('m'+this.peer_ca)
-        const cleChiffreeX25519Bytes = convertPublicKey(cleChiffreeEd25519Bytes)
-
+        const cleChiffreeX25519Bytes = multibase.decode('m'+this.peer_ca)
         const clePeerCaPublicX25519 = await deriverCleSecrete(clePriveeCa, cleChiffreeX25519Bytes)
         return clePeerCaPublicX25519
     }
