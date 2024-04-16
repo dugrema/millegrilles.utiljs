@@ -54,7 +54,6 @@ class SignatureDomaines {
 
     async verifierSecrete(cleSecrete) {
         const clePublique = publicKeyFromPrivateKey(cleSecrete)
-        console.debug("Cle secrete : %O\nCle publique: %O", cleSecrete, clePublique)
         const resultat = await verifierDomaines(this.domaines, this.signature_secrete, clePublique)
         if(!resultat) throw new Error("Signature invalide")
     }
