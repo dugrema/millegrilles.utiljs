@@ -3,8 +3,11 @@ const multibase = require('multibase')
 const { ed25519 } = require('@dugrema/node-forge')
 const { calculerDigest } = require('./hachage')
 const { publicKeyFromPrivateKey } = require('./certificats')
+const { chiffrerCle, dechiffrerCle } = require('./chiffrage.ed25519')
 
 const SIGNATURE_DOMAINES_V1 = 1
+
+const CONST_FORMAT_MGS4 = 'mgs4'
 
 /**
  * Signature utilisee par la commande ajouterCleDomaines du maitre des cles. Permet de
@@ -110,6 +113,73 @@ async function verifierDomaines(domaines, signatureString, clePublique) {
     return ed25519.verify(params)
 }
 
+class DechiffrageInterMillegrilles {
+    constructor() {
+        this.cles = null
+        this.format = null
+        this.nonce = null
+        this.verification = null
+
+        this.cle_id = undefined
+
+        // Deprecated, header -> nonce, hachage -> verification
+        this.header = undefined
+        this.hachage = undefined
+    }
+
+    async dechiffrer(fingerprint, clePriveeEd25519) {
+        const cleChiffree = this.cles[fingerprint]
+        if(!cleChiffree) throw new Error(`Cle manquante pour certificat ${fingerprint}`)
+        // La cle chiffree est encodee en base64 nopad, utiliser format 'm'+cle pour decoder en multibase
+        return await dechiffrerCle('m'+cleChiffree, clePriveeEd25519)
+    }
+}
+
+class CommandeAjouterCleDomaines {
+
+    /**
+     * 
+     * @param {DechiffrageInterMillegrilles} cles 
+     * @param {SignatureDomaines} signature 
+     * @param {Object} identificateurs_documents 
+     */
+    constructor(informationDechiffrage, signature, identificateursDocuments) {
+        this.cles = informationDechiffrage
+        this.signature = signature
+        this.identificateurs_documents = identificateursDocuments
+    }
+
+}
+
+async function creerCommandeAjouterCle(signature, cleSecrete, clesPubliques, opts) {
+    opts = opts || {}
+
+    if(!signature) throw new Error("Aucune signature")
+    if(!cleSecrete) throw new Error("Aucunes cle secrete")
+    if(!clesPubliques || clesPubliques.length === 0) throw new Error("Aucunes cles publiques")
+
+    const { nonce, verification } = opts
+    const identificateursDocuments = opts.identificateursDocuments || {}
+
+    // Chiffrer la cle secrete pour chaque cle publique
+    const clesChiffrees = {}
+    for(const clePublique of clesPubliques) {
+        // const clePubliqueBytes = multibase.decode('m'+clePublique)
+        const clePubliqueBytes = Buffer.from(clePublique, 'hex')
+        const cleChiffree = await chiffrerCle(cleSecrete, clePubliqueBytes, {ed25519: true})
+        clesChiffrees[clePublique] = cleChiffree.slice(1)  // Retirer le 'm' (format mulitbase)
+    }
+
+    const informationDechiffrage = new DechiffrageInterMillegrilles()
+    informationDechiffrage.cles = clesChiffrees
+    informationDechiffrage.format = opts.format || CONST_FORMAT_MGS4
+    informationDechiffrage.nonce = nonce
+    informationDechiffrage.verification = verification
+
+    return new CommandeAjouterCleDomaines(informationDechiffrage, signature, identificateursDocuments)
+}
+
 module.exports = {
-    SignatureDomaines
+    SignatureDomaines, CommandeAjouterCleDomaines, DechiffrageInterMillegrilles,
+    creerCommandeAjouterCle
 }

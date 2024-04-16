@@ -86,7 +86,7 @@ async function chiffrerCle(cleSecrete, clePublique, opts) {
     const cleChiffreeBuffer = new Uint8Array(80)
     cleChiffreeBuffer.set(clePubliquePeer, 0)   // 32 bytes cle publique x25519
     cleChiffreeBuffer.set(ciphertext, 32)       // 32 bytes cle secrete chiffree
-    cleChiffreeBuffer.set(rawTag, 64)              // 16 bytes authentication tag
+    cleChiffreeBuffer.set(rawTag, 64)           // 16 bytes authentication tag
     const cleChiffreeStr = base64.encode(cleChiffreeBuffer)
 
     return cleChiffreeStr

@@ -11,8 +11,9 @@ console.info("Ciphers disponibles : %s", crypto.getCiphers().reduce((liste, item
 }, ''))
 
 
-async function creerCipherChacha20Poly1305(key, nonce, opts) {
+async function creerCipherChacha20Poly1305(key, opts) {
     opts = opts || {}
+    const nonce = opts.nonce
     const digestAlgo = opts.digestAlgo || 'blake2b-512'
     const cipher = crypto.createCipheriv('chacha20-poly1305', key, nonce, { authTagLength: 16 })
     const hacheur = new Hacheur({hashingCode: digestAlgo})
@@ -54,11 +55,12 @@ async function creerDecipherChacha20Poly1305(key, nonce) {
  * @param {*} data 
  * @param {*} opts 
  */
-async function encryptChacha20Poly1305(key, nonce, data, opts) {
-    const cipher = await creerCipherChacha20Poly1305(key, nonce, opts)
+async function encryptChacha20Poly1305(data, opts) {
+    const key = opts.key
+    const cipher = await creerCipherChacha20Poly1305(key, opts)
     const ciphertext = await cipher.update(data)
     const {tag, hachage} = await cipher.finalize()
-    return {ciphertext, tag, hachage}
+    return {ciphertext, rawTag: tag, hachage}
 }
 
 /**
@@ -69,7 +71,10 @@ async function encryptChacha20Poly1305(key, nonce, data, opts) {
  * @param {*} tag 
  * @param {*} opts 
  */
-async function decryptChacha20Poly1305(key, nonce, data, tag, opts) {
+async function decryptChacha20Poly1305(key, data, opts) {
+    opts = opts || {}
+    const nonce = opts.nonce
+    const tag = opts.tag
     const cipher = await creerDecipherChacha20Poly1305(key, nonce, opts)
     const ciphertext = await cipher.update(data)
     await cipher.finalize(tag)
