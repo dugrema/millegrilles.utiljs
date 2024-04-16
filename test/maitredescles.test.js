@@ -1,4 +1,6 @@
 const { SignatureDomaines } = require('../src/maitredescles')
+const { publicKeyFromPrivateKey } = require('../src/certificats')
+
 require('./hachage.config')
 
 const CLE_1 = new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1])
@@ -16,6 +18,12 @@ test('test signature domaines', async () => {
 
     expect(signature.signature_ca).toBe("Kpey17TDuXtwHH/1A+08ZS3xSTqYLXmFZPDT8KLqHyyLMQSyGYLGXWyyeLlchwwe59+P5+2kgzGFztz9usc/Cw")
     expect(signature.signature_secrete).toBe("LKo3GK4j4BJV6xWT4GNF2zJDrw4XklWXeaSSn7aU3GuZTYDPkN5p3xVyI25r77PKjKvQ7JqMNnNOhZrFeQkgDg")
+
+    // Lance une erreur si la cle est invalide
+    await signature.verifierSecrete(cleSecrete)
+
+    const clePubliqueCa = publicKeyFromPrivateKey(CLE_1)
+    await signature.verifierCa(clePubliqueCa)
 })
 
 test('test get cle ref', async () => {
@@ -32,3 +40,4 @@ test('test get cle ref', async () => {
     expect(cleRef).toBe("z82YFttyyjsYSbu4NTk5G56RBFaH71edAAqXyNxaMiFFC")
 })
 
+test

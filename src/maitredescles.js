@@ -2,6 +2,7 @@
 const multibase = require('multibase')
 const { ed25519 } = require('@dugrema/node-forge')
 const { calculerDigest } = require('./hachage')
+const { publicKeyFromPrivateKey } = require('./certificats')
 
 const SIGNATURE_DOMAINES_V1 = 1
 
@@ -20,13 +21,14 @@ class SignatureDomaines {
         // Version de la signature
         this.version = opts.version || SIGNATURE_DOMAINES_V1
         
-        // Signature des domaines pour la cle CA en utilisant la cle peer privee
+        // Signature des domaines pour la cle CA en utilisant la cle peer privee.
+        // La cle de verification est la cle chiffree (peer public) emise pour le CA.
         // Cette signature existe uniquement pour une cle derivee a partir du CA.
-        // Encodage : string base64
+        // Encodage : string base64 nopad
         this.signature_ca = null
 
         // Signature des domaines en utilisant la cle secrete
-        // Encodage : string base64
+        // Encodage : string base64 nopad
         this.signature_secrete = null
     }
 
@@ -39,6 +41,22 @@ class SignatureDomaines {
     async signerEd25519(peerPrive, cleSecrete) {
         this.signature_ca = await signerDomaines(this.domaines, peerPrive)
         this.signature_secrete = await signerDomaines(this.domaines, cleSecrete)
+    }
+
+    /**
+     * Utilise la cle chiffree pour le CA comme validation.
+     * @param {Uint8Array} clePubliqueCa Cle chiffree pour le CA
+     */
+    async verifierCa(clePubliqueCa) {
+        const resultat = await verifierDomaines(this.domaines, this.signature_ca, clePubliqueCa)
+        if(!resultat) throw new Error("Signature invalide")
+    }
+
+    async verifierSecrete(cleSecrete) {
+        const clePublique = publicKeyFromPrivateKey(cleSecrete)
+        console.debug("Cle secrete : %O\nCle publique: %O", cleSecrete, clePublique)
+        const resultat = await verifierDomaines(this.domaines, this.signature_secrete, clePublique)
+        if(!resultat) throw new Error("Signature invalide")
     }
 
     async getCleRef() {
@@ -75,6 +93,22 @@ async function signerDomaines(domaines, clePriveeEd25519) {
         .slice(1)  // Retirer premier char multibase ('m')
 
     return signatureBase64
+}
+
+async function verifierDomaines(domaines, signatureString, clePublique) {
+    const domainesBytes = new TextEncoder().encode(JSON.stringify(domaines))
+    const domainesHachage = await calculerDigest(domainesBytes, 'blake2s-256')
+
+    const signatureBytes = multibase.decode('m'+signatureString)
+
+    const params = {
+        message: domainesHachage, 
+        signature: signatureBytes, 
+        publicKey: clePublique
+    }
+
+    // Verifier
+    return ed25519.verify(params)
 }
 
 module.exports = {
