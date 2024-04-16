@@ -1,6 +1,9 @@
 const multibase = require('multibase')
 const { generateKeyPair, sharedKey } = require('curve25519-js')
-const { SignatureDomaines, creerCommandeAjouterCle } = require('../src/maitredescles')
+
+const { ed25519 } = require('@dugrema/node-forge')
+
+const { SignatureDomaines, creerCommandeAjouterCle, genererCleSecrete } = require('../src/maitredescles')
 const { publicKeyFromPrivateKey } = require('../src/certificats')
 
 require('./hachage.config')
@@ -20,14 +23,10 @@ test('test signature domaines', async () => {
 
     console.debug("Signature %O", signature)
 
-    expect(signature.signature_ca).toBe("Kpey17TDuXtwHH/1A+08ZS3xSTqYLXmFZPDT8KLqHyyLMQSyGYLGXWyyeLlchwwe59+P5+2kgzGFztz9usc/Cw")
-    expect(signature.signature_secrete).toBe("LKo3GK4j4BJV6xWT4GNF2zJDrw4XklWXeaSSn7aU3GuZTYDPkN5p3xVyI25r77PKjKvQ7JqMNnNOhZrFeQkgDg")
+    expect(signature.signature).toBe("LKo3GK4j4BJV6xWT4GNF2zJDrw4XklWXeaSSn7aU3GuZTYDPkN5p3xVyI25r77PKjKvQ7JqMNnNOhZrFeQkgDg")
 
     // Lance une erreur si la cle est invalide
     await signature.verifierSecrete(cleSecrete)
-
-    const clePubliqueCa = publicKeyFromPrivateKey(CLE_1)
-    await signature.verifierCa(clePubliqueCa)
 })
 
 test('test get cle ref', async () => {
@@ -58,9 +57,6 @@ test('test creer commande maitre des cles', async () => {
           // clePublique3X25519 = convertirPublicEd25519VersX25519(clePublique3Ed25519)
     console.debug("ClePublique3 Ed25519 ", clePublique3Ed25519)
     const clePubliqueEd25519Hex = Buffer.from(clePublique3Ed25519.publicKeyBytes).toString('hex')
-    // String.fromCharCode
-    //     .apply(null, multibase.encode('hex', clePublique3Ed25519.publicKeyBytes))
-    //     .slice(1)  // Retirer premier char multibase ('m')
   
     const clesPubliques = [clePubliqueEd25519Hex]
     console.debug("ClesPubliques ", clesPubliques)
@@ -77,3 +73,22 @@ test('test creer commande maitre des cles', async () => {
     console.debug("Cle dechiffree : %O\nCle secrete: %O", new Uint8Array(cleDechiffree), cleSecrete)
     expect(new Uint8Array(cleDechiffree)).toEqual(cleSecrete)
 })
+
+test('generer cle secrete avec domaines', async () => {
+      const domaines = ['Domaine1']
+  
+      const { publicKey, privateKey } = ed25519.generateKeyPair()
+      console.debug("KeyPair\nPublic: %O\nPrivate: %O", publicKey, privateKey)
+  
+      const cle = await genererCleSecrete(publicKey.publicKeyBytes, {domaines})
+      console.debug("Cle secrete signee", cle)
+  
+      // Verifier la signature secrete
+      await cle.signature.verifierSecrete(cle.cle)
+  
+      // Dechiffrer la cle CA
+      const cleCaDechiffree = await cle.signature.getCleDechiffreeCa(privateKey)
+      console.debug("Cle CA dechiffree\n%O", cleCaDechiffree)
+      expect(cleCaDechiffree).toEqual(cle.cle)
+  })
+  

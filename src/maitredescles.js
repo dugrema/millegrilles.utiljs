@@ -1,9 +1,10 @@
 // Utilitaires pour le maitre des cles
 const multibase = require('multibase')
 const { ed25519 } = require('@dugrema/node-forge')
+const { convertPublicKey } = require('ed2curve')
 const { calculerDigest } = require('./hachage')
 const { publicKeyFromPrivateKey } = require('./certificats')
-const { chiffrerCle, dechiffrerCle } = require('./chiffrage.ed25519')
+const { genererCleSecrete: genererCleSecreteEd25519, chiffrerCle, dechiffrerCle, deriverCleSecrete } = require('./chiffrage.ed25519')
 
 const SIGNATURE_DOMAINES_V1 = 1
 
@@ -18,21 +19,24 @@ class SignatureDomaines {
     constructor(domaines, opts) {
         opts = opts || {}
 
-        /** @field Liste des domaines supportes pour la cle. */
+        /** Liste des domaines supportes pour la cle. */
         this.domaines = domaines
 
-        // Version de la signature
+        /** Version de la signature */
         this.version = opts.version || SIGNATURE_DOMAINES_V1
-        
-        // Signature des domaines pour la cle CA en utilisant la cle peer privee.
-        // La cle de verification est la cle chiffree (peer public) emise pour le CA.
-        // Cette signature existe uniquement pour une cle derivee a partir du CA.
-        // Encodage : string base64 nopad
-        this.signature_ca = null
 
-        // Signature des domaines en utilisant la cle secrete
-        // Encodage : string base64 nopad
-        this.signature_secrete = null
+        /** 
+         * Peer public, represente la cle chiffree pour le CA, format Ed25519.
+         * Doit etre converti en X25519 pour deriver le secret en utilisant la cle privee du CA + blake2s.
+         * Sert aussi a valider signature_ca.
+         */
+        this.peer_ca = null
+
+        /**
+         * Signature des domaines en utilisant la cle secrete
+         * Encodage : string base64 nopad
+         */
+        this.signature = null
     }
 
     /**
@@ -42,28 +46,31 @@ class SignatureDomaines {
      * @param {Uint8Array} cleSecrete Bytes d'une cle secrete
      */
     async signerEd25519(peerPrive, cleSecrete) {
-        this.signature_ca = await signerDomaines(this.domaines, peerPrive)
-        this.signature_secrete = await signerDomaines(this.domaines, cleSecrete)
+        // Effectuer les signatures
+        // this.signature_ca = await signerDomaines(this.domaines, peerPrive)
+        this.signature = await signerDomaines(this.domaines, cleSecrete)
+        
+        // Calculer la version publique du peer, conserver en base64
+        const clePubliqueCa = publicKeyFromPrivateKey(peerPrive)
+        this.peer_ca = String.fromCharCode
+            .apply(null, multibase.encode('base64', clePubliqueCa.publicKeyBytes))
+            .slice(1)  // Retirer le 'm' d'encodage multibase
     }
 
     /**
-     * Utilise la cle chiffree pour le CA comme validation.
-     * @param {Uint8Array} clePubliqueCa Cle chiffree pour le CA
+     * Utilise la cle secrete pour verifier la signature des domaines. Si la signature est valide,
+     * implique que la cle secrete est correcte et que les domaines sont valides pour cette cle.
+     * @param {Uint8Array} cleSecrete 
      */
-    async verifierCa(clePubliqueCa) {
-        const resultat = await verifierDomaines(this.domaines, this.signature_ca, clePubliqueCa)
-        if(!resultat) throw new Error("Signature invalide")
-    }
-
     async verifierSecrete(cleSecrete) {
         const clePublique = publicKeyFromPrivateKey(cleSecrete)
-        const resultat = await verifierDomaines(this.domaines, this.signature_secrete, clePublique)
+        const resultat = await verifierDomaines(this.domaines, this.signature, clePublique)
         if(!resultat) throw new Error("Signature invalide")
     }
 
     async getCleRef() {
-        if(!this.signature_secrete) throw new Error("Signature absente")
-        const hachageBytes = multibase.decode('m'+this.signature_secrete)
+        if(!this.signature) throw new Error("Signature absente")
+        const hachageBytes = multibase.decode('m'+this.signature)
         const hachageSignatureByteString = await calculerDigest(hachageBytes, 'blake2s-256')
         const hachageSignature = Buffer.from(hachageSignatureByteString, 'binary')
         
@@ -71,6 +78,16 @@ class SignatureDomaines {
         const signatureBase58 = String.fromCharCode.apply(null, multibase.encode('base58btc', hachageSignature))
         return signatureBase58
     }
+
+    async getCleDechiffreeCa(clePriveeCa) {
+        // Convertir la cle Ed25519 publique en X25519
+        const cleChiffreeEd25519Bytes = multibase.decode('m'+this.peer_ca)
+        const cleChiffreeX25519Bytes = convertPublicKey(cleChiffreeEd25519Bytes)
+
+        const clePeerCaPublicX25519 = await deriverCleSecrete(clePriveeCa, cleChiffreeX25519Bytes)
+        return clePeerCaPublicX25519
+    }
+
 }
 
 /**
@@ -130,6 +147,7 @@ class DechiffrageInterMillegrilles {
     async dechiffrer(fingerprint, clePriveeEd25519) {
         const cleChiffree = this.cles[fingerprint]
         if(!cleChiffree) throw new Error(`Cle manquante pour certificat ${fingerprint}`)
+        
         // La cle chiffree est encodee en base64 nopad, utiliser format 'm'+cle pour decoder en multibase
         return await dechiffrerCle('m'+cleChiffree, clePriveeEd25519)
     }
@@ -179,7 +197,25 @@ async function creerCommandeAjouterCle(signature, cleSecrete, clesPubliques, opt
     return new CommandeAjouterCleDomaines(informationDechiffrage, signature, identificateursDocuments)
 }
 
+async function genererCleSecrete(clePublique, opts) {
+    opts = opts || {}
+    let resultat = await genererCleSecreteEd25519(clePublique, {...opts, returnPeer: true})
+    const { privateKey, cle, peer } = resultat
+
+    resultat = {cle}
+
+    if(opts.domaines) {
+        const signature = new SignatureDomaines(opts.domaines)
+        await signature.signerEd25519(privateKey.privateKeyBytes, cle)
+        resultat.signature = signature
+    } else {
+        resultat.peer = peer
+    }
+
+    return resultat
+}
+
 module.exports = {
     SignatureDomaines, CommandeAjouterCleDomaines, DechiffrageInterMillegrilles,
-    creerCommandeAjouterCle
+    creerCommandeAjouterCle, genererCleSecrete
 }

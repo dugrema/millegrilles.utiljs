@@ -39,7 +39,13 @@ async function genererCleSecrete(clePublique, opts) {
     const cleSecreteHachee = await _deriverCleSecrete(peerPrivateX25519, clePubliqueX25519)
     // console.debug("Cle secrete hachee : %O", cleSecreteHachee)
 
-    return {cle: cleSecreteHachee, peer: peerPublic, peerPublicBytes: peerPublicX25519}
+    const resultat = {cle: cleSecreteHachee, peer: peerPublic, peerPublicBytes: peerPublicX25519}
+    if(opts.returnPeer) {
+        resultat.publicKey = publicKey
+        resultat.privateKey = privateKey
+    }
+
+    return resultat
 }
 
 async function deriverCleSecrete(clePrivee, clePublique, opts) {
