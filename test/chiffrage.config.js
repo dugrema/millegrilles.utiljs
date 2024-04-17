@@ -30,14 +30,16 @@ async function creerCipherChacha20Poly1305(key, opts) {
             cipher.final()
             tag = cipher.getAuthTag()
             hachage = await hacheur.finalize()
-            return {tag, hachage}
+            return {tag, hachage, format: 'chacha20-poly1305'}
         },
         tag: () => tag,
         hachage: () => hachage,
+        format: () => 'chacha20-poly1305'
     }
 }
 
-async function creerDecipherChacha20Poly1305(key, nonce) {
+async function creerDecipherChacha20Poly1305(key, opts) {
+    const nonce = opts.nonce
     const decipher = crypto.createDecipheriv('chacha20-poly1305', key, nonce, { authTagLength: 16 })
     return {
         update: data => decipher.update(data),
@@ -59,8 +61,9 @@ async function encryptChacha20Poly1305(data, opts) {
     const key = opts.key
     const cipher = await creerCipherChacha20Poly1305(key, opts)
     const ciphertext = await cipher.update(data)
-    const {tag, hachage} = await cipher.finalize()
-    return {ciphertext, rawTag: tag, hachage}
+    const {tag, hachage, format} = await cipher.finalize()
+    const nonce = opts.nonce || opts.iv
+    return {ciphertext, rawTag: tag, hachage, format, nonce}
 }
 
 /**
@@ -73,9 +76,8 @@ async function encryptChacha20Poly1305(data, opts) {
  */
 async function decryptChacha20Poly1305(key, data, opts) {
     opts = opts || {}
-    const nonce = opts.nonce
     const tag = opts.tag
-    const cipher = await creerDecipherChacha20Poly1305(key, nonce, opts)
+    const cipher = await creerDecipherChacha20Poly1305(key, opts)
     const ciphertext = await cipher.update(data)
     await cipher.finalize(tag)
     return ciphertext

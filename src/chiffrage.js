@@ -12,7 +12,7 @@ const stringify = require('json-stable-stringify')
 const {hacher, hacherCertificat} = require('./hachage')
 const { getCipher } = require('./chiffrage.ciphers')
 const {extraireExtensionsMillegrille} = require('./forgecommon')
-const { SignateurMessageEd25519 } = require('./formatteurMessage')
+const { SignatureDomaines } = require('./maitredescles')
 
 const VERSION_SIGNATURE = 0x2
 
@@ -52,6 +52,11 @@ async function chiffrer(data, opts) {
 
   secretKey = secretKey || resultat.key
 
+  let tag = resultat.tag
+  if(resultat.rawTag) {
+    tag = base64.encode(resultat.rawTag)
+  }
+
   const champsMeta = ['iv', 'nonce', 'tag', 'header']
   const meta = champsMeta.reduce((acc, champ)=>{
     const value = resultat[champ]
@@ -75,6 +80,7 @@ async function chiffrer(data, opts) {
       // tag: base64.encode(tag),
       hachage_bytes: resultat.hachage,
       format: resultat.format,
+      tag,
     },
   }
 
@@ -163,7 +169,7 @@ async function preparerDecipher(key, opts) {
 async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, identificateurs_document, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG,
-        format = opts.format || 'mgs4', //
+        format = opts.cipherAlgo || opts.format || 'mgs4', //
         peerPublic = opts.peer
   // const userId = opts.userId
 
@@ -261,31 +267,63 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   return commandeMaitrecles
 }
 
-async function signerIdentiteCle(password, domaine, identificateurs_document, hachage_bytes) {
-  // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
-  // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
-  const identiteCle = { domaine, identificateurs_document, hachage_bytes }
-  const identiteCleString = stringify(identiteCle).normalize()
-  const identiteCleBuffer = new Uint8Array(Buffer.from(new TextEncoder().encode(identiteCleString)))
-  const identiteCleHachage = await hacher(identiteCleBuffer, {bytesOnly: true, hashingCode: 'blake2b-512'})
-  // if(userId) identiteCle.user_id = userId
+/**
+ * Genere une nouvelle commande de maitre des cles pour ajouter une cle a des domaines.
+ * 
+ * @param {*} certificatsPem Liste de certificats a utiliser pour le rechiffrage de la cle. Supporte string si 1 seul certificat.
+ * @param {string} clePeerCa Cle peer public X25519 utilisee pour deriver la cle avec le CA.
+ * @param {Uint8Array} cleSecrete Cle secrete
+ * @param {*} domaines Array de string des domaines a signer. Supporte aussi string si 1 seul domaine.
+ * @param {*} opts 
+ * @returns {Object} Contenu de la commande ajouter cle domaines. 
+ */
+async function preparerCommandeAjouterCleDomaines(certificatsPem, clePeerCa, cleSecrete, domaines, opts) {
+  opts = opts || {}
+  const DEBUG = opts.DEBUG
 
-  const clePriveeEd25519 = await hacher(password, {bytesOnly: true, hashingCode: 'blake2s-256'})
+  if(DEBUG) console.debug("preparerCommandeAjouterCleDomaines domaines %O", domaines)
 
-  const cleEd25519 = ed25519.generateKeyPair({seed: clePriveeEd25519})
-  const signateur = new SignateurMessageEd25519(cleEd25519.privateKey)
-  await signateur.ready
-  const signatureIdentiteCle = await signateur.signer(identiteCleHachage)
+  // Ajuster parametres
+  if(typeof(domaines) === 'string') domaines = [domaines]  // Convertir domaines en array de strings
+  if(typeof(certificatsPem) === 'string') certificatsPem = [certificatsPem]
+  
+  // Verifier elements obligatoires
+  if(typeof(clePeerCa) !== 'string') throw new Error(`clePeerCa absent`)
+  if(!cleSecrete) throw new Error(`cleSecrete absente`)
+  if(!domaines || domaines.length === 0) throw new Error("domaines absents")
+  if(!certificatsPem || certificatsPem.length === 0) throw new Error("Aucun certificat de rechiffrage")
 
-  // Convertir en multibase, ajouter byte version 1 a position 0
-  const bufferSignature = Buffer.from(signatureIdentiteCle, 'hex')
-  const arraySignature = new Uint8Array(65)
-  arraySignature.set([VERSION_SIGNATURE], 0)
-  arraySignature.set(bufferSignature, 1)
-  const mbValeur = multibase.encode('base64', arraySignature)
-  const mbString = String.fromCharCode.apply(null, mbValeur)
+  // Chiffrer le password pour chaque certificat en parametres
+  const cles = {}
+  for(const pem of certificatsPem) {
+    // Chiffrer le mot de passe avec le certificat fourni
+    const certForge = forgePki.certificateFromPem(pem)
+    const certCN = certForge.subject.getField('CN').value
+    const publicKey = certForge.publicKey.publicKeyBytes
+    const fingerprint = await hacherCertificat(certForge)
 
-  return mbString
+    // Choisir une partition de MaitreDesCles
+    let extensionsCertificat = extraireExtensionsMillegrille(certForge)
+    let roles = extensionsCertificat['roles']
+    if(certCN.toLowerCase() === 'millegrille') {
+      // Ok
+    } else if(roles && roles.includes('maitredescles')) {
+      // Ok
+    } else {
+      if(DEBUG) console.info("Certificat n'as pas le role maitre des cles\nCERT:%O\nEXT:%O", certForge.subject.attributes, extensionsCertificat)
+      throw new Error(`Certificat n'a pas le role 'maitredescles' (cn: ${certCN}, roles: ${roles})`)
+    }
+
+    const passwordChiffre = await chiffrerCleEd25519(cleSecrete, publicKey)
+    if(DEBUG) console.debug("preparerCommandeAjouterCleDomaines Password chiffre pour %s : %s", fingerprint, passwordChiffre)
+    cles[fingerprint] = passwordChiffre.slice(1)  // retirer 'm' multibase
+  }
+
+  // Creer la SignatureDomaines
+  const signature = new SignatureDomaines(domaines)
+  await signature.signerEd25519(clePeerCa, cleSecrete)
+
+  return { cles, signature }
 }
 
 async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, identificateurs_document, opts) {
@@ -364,7 +402,7 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
     // Assumer format multibase
     ciphertext = multibase.decode(ciphertext)
   }
-  const {iv, tag, cle: passwordChiffre, format} = messageCle
+  const {iv, nonce, tag, cle: passwordChiffre, format} = messageCle
 
   if(DEBUG) console.debug(`Dechiffrer message format ${format} avec iv: ${iv}, tag: ${tag}\nmessage: %O`, ciphertext)
 
@@ -379,8 +417,8 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
   if(DEBUG) console.debug("Password dechiffre : %O, iv: %s, tag: %s", password, iv, tag)
 
   var contenuDocument = null
-  if(format === 'mgs3') {
-    var documentString = await dechiffrer(ciphertext, password, iv, tag)
+  if(getCipher(format)) {
+    var documentString = await dechiffrer(password, ciphertext, {...opts, format, nonce: nonce||iv, tag})
     if(opts.unzip) {
       documentString = await new Promise((resolve, reject)=>{
         throw new Error('fix me')
@@ -411,6 +449,105 @@ async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
   return contenuDocument
 }
 
+async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsChiffragePem, opts) {
+  opts = opts || {}
+  const DEBUG = opts.DEBUG
+
+  if(DEBUG) console.debug("Chiffrer document %O\nopts: %O", 
+    docChamps, opts)
+
+  var docString = opts.nojson?docChamps:stringify(docChamps).normalize()  // string
+  const typeBuffer = opts.type || 'utf-8'
+  if(typeBuffer == 'binary') {
+    // Rien a faire
+  } else if(typeof(TextEncoder) !== 'undefined') {
+    docString = new TextEncoder().encode(docString)  // buffer
+  } else {
+    docString = Buffer.from(docString, typeBuffer)
+  }
+
+  // Options de compression
+  if(opts.gzip) {
+    docString = pako.deflate(docString, {gzip: true})
+  }
+
+  const optsChiffrage = {...opts}
+  optsChiffrage.clePubliqueEd25519 = clePubliqueCa
+
+  const infoDocumentChiffre = await chiffrer(docString, optsChiffrage)
+  const meta = infoDocumentChiffre.meta
+
+  if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
+
+  const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
+  
+  const cleSecrete = infoDocumentChiffre.secretKey
+
+  if(DEBUG) console.debug("Certificats chiffrage : %O", certificatsChiffragePem)
+  const peerCa = infoDocumentChiffre.secretChiffre.slice(1)  // Retirer 'm' multibase
+  const commandeMaitrecles = await preparerCommandeAjouterCleDomaines(
+    certificatsChiffragePem, peerCa, cleSecrete, domaine, opts
+  )
+
+  let nonce = meta.nonce || meta.iv || meta.header
+  if(nonce) nonce = nonce.slice(1)  // Retirer 'm' multibase
+
+  let verification = meta.verification
+  if(!verification && meta.tag) {
+    verification = meta.tag.slice(1)  // Retirer 'm' multibase
+  } else {
+    verification = meta.hachage_bytes
+  }
+
+  const docChiffre = {
+    data_chiffre: ciphertextString.slice(1), // Retirer 'm' multibase
+    format: meta.format, 
+    nonce, 
+    verification,
+  }
+
+  const resultat = {doc: docChiffre, commandeMaitrecles}
+  if(opts.retourSecret === true) resultat.cleSecrete = cleSecrete
+  return resultat
+}
+
+async function dechiffrerChampsV2(message, cleSecrete, opts) {
+  opts = opts || {}
+  const DEBUG = opts.DEBUG
+
+  const bytesCiphertext = base64.decode('m' + message.data_chiffre)
+
+  if(message.nonce) message.nonce = multibase.decode('m' + message.nonce)
+  if(message.verification) message.verification = multibase.decode('m'+message.verification)
+
+  const decipher = await preparerDecipher(cleSecrete, message)
+
+  // Dechiffrer message
+  let messageDechiffre = null
+  let outputDechiffre = await decipher.update(bytesCiphertext)
+  messageDechiffre = concatArrays(messageDechiffre, outputDechiffre)
+  const outputFinalize = await decipher.finalize(message.verification)
+  messageDechiffre = concatArrays(messageDechiffre, outputFinalize.message)
+  
+  if(DEBUG) console.debug("dechiffrerChampsChiffres Contenu dechiffre bytes ", messageDechiffre)
+
+  // Decompresser
+  if(opts.gzip) {
+    try {
+      messageDechiffre = pako.inflate(messageDechiffre).buffer
+    } catch(err) {
+      console.error("Erreur decompression avec pako : ", err)
+      throw err
+    }
+    if(DEBUG) console.debug("dechiffrerChampsChiffres Contenu inflate gzip ", messageDechiffre)
+  }
+
+  // Decoder bytes en JSON
+  const messageJson = new TextDecoder().decode(messageDechiffre)
+  if(DEBUG) console.debug("dechiffrerChampsChiffres Resultat dechiffre ", messageJson)
+  return JSON.parse(messageJson)
+}
+
 async function updateChampsChiffres(docChamps, secretKey, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
@@ -432,7 +569,11 @@ async function updateChampsChiffres(docChamps, secretKey, opts) {
   if(DEBUG) console.debug("updateChampsChiffres Document chiffre ", infoDocumentChiffre)
   const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
 
-  const champsChiffres = {data_chiffre: ciphertextString, header: infoDocumentChiffre.header, format: infoDocumentChiffre.format}
+  const champsChiffres = {
+    data_chiffre: ciphertextString, 
+    nonce: infoDocumentChiffre.nonce || infoDocumentChiffre.iv || infoDocumentChiffre.header,
+    format: infoDocumentChiffre.format
+  }
   if(ref_hachage_bytes) champsChiffres.ref_hachage_bytes = ref_hachage_bytes
 
   return champsChiffres
@@ -512,5 +653,10 @@ async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
 module.exports = {
   chiffrer, dechiffrer, preparerCipher, preparerDecipher, preparerCommandeMaitrecles, 
   chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
-  signerIdentiteCle, updateChampsChiffres, dechiffrerChampsChiffres,
+  updateChampsChiffres, dechiffrerChampsChiffres,
+  
+  chiffrerChampsV2, dechiffrerChampsV2, preparerCommandeAjouterCleDomaines,
+
+  // Obsolete
+  // signerIdentiteCle, 
 }
