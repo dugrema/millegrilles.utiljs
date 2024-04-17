@@ -146,7 +146,7 @@ test('creer commande ajouter cle domaines', async () => {
     const signature = commandeMaitreDesCles.signature
 
     console.debug("Commande maitre des cles\n%O\n\n%s", commandeMaitreDesCles, JSON.stringify(commandeMaitreDesCles))
-    expect(signature.peer_ca).toEqual(peerCa)
+    expect(signature.ca).toEqual(peerCa)
     expect(signature.domaines).toEqual([domaine])
     expect(signature.version).toEqual(1)
 

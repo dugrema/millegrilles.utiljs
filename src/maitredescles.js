@@ -26,7 +26,7 @@ class SignatureDomaines {
          * Peer public, represente la cle chiffree pour le CA, format X25519.
          * Deriver le secret en utilisant la cle privee du CA + blake2s.
          */
-        this.peer_ca = null
+        this.ca = null
 
         /**
          * Signature des domaines en utilisant la cle secrete
@@ -46,10 +46,10 @@ class SignatureDomaines {
         this.signature = await signerDomaines(this.domaines, cleSecrete)
         
         if(typeof(peerPublic) === 'string') {
-            this.peer_ca = peerPublic
+            this.ca = peerPublic
         } else if(ArrayBuffer.isView(peerPublic)) {
             // Conserver le peerPublic en base64 no pad.
-            this.peer_ca = String.fromCharCode
+            this.ca = String.fromCharCode
                 .apply(null, multibase.encode('base64', peerPublic))
                 .slice(1)  // Retirer le 'm' d'encodage multibase
         } else {
@@ -87,7 +87,7 @@ class SignatureDomaines {
     }
 
     async getCleDechiffreeCa(clePriveeCa) {
-        const cleChiffreeX25519Bytes = multibase.decode('m'+this.peer_ca)
+        const cleChiffreeX25519Bytes = multibase.decode('m'+this.ca)
         const clePeerCaPublicX25519 = await deriverCleSecrete(clePriveeCa, cleChiffreeX25519Bytes)
         return clePeerCaPublicX25519
     }

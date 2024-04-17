@@ -468,7 +468,8 @@ async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsCh
 
   // Options de compression
   if(opts.gzip) {
-    docString = pako.deflate(docString, {gzip: true})
+    throw new Error("to do")
+    //docString = pako.gzip(docString)
   }
 
   const optsChiffrage = {...opts}
@@ -488,6 +489,7 @@ async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsCh
   const commandeMaitrecles = await preparerCommandeAjouterCleDomaines(
     certificatsChiffragePem, peerCa, cleSecrete, domaine, opts
   )
+  const cleId = await commandeMaitrecles.signature.getCleRef()
 
   let nonce = meta.nonce || meta.iv || meta.header
   if(nonce) nonce = nonce.slice(1)  // Retirer 'm' multibase
@@ -504,6 +506,7 @@ async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsCh
     format: meta.format, 
     nonce, 
     verification,
+    cle_id: cleId,
   }
 
   const resultat = {doc: docChiffre, commandeMaitrecles}
