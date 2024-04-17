@@ -6,9 +6,9 @@ const { Hacheur } = require('../src/hachage')
 // Importer config hachage
 require('./hachage.config')
 
-console.info("Ciphers disponibles : %s", crypto.getCiphers().reduce((liste, item)=>{
-    return liste + '\n' + item
-}, ''))
+// console.info("Ciphers disponibles : %s", crypto.getCiphers().reduce((liste, item)=>{
+//     return liste + '\n' + item
+// }, ''))
 
 
 async function creerCipherChacha20Poly1305(key, opts) {

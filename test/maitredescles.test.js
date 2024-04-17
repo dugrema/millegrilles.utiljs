@@ -1,6 +1,6 @@
 const multibase = require('multibase')
 const { generateKeyPair, sharedKey } = require('curve25519-js')
-
+const { convertSecretKey, convertPublicKey } = require('ed2curve')
 const { ed25519 } = require('@dugrema/node-forge')
 
 const { SignatureDomaines, creerCommandeAjouterCle, genererCleSecrete, DechiffrageInterMillegrilles } = require('../src/maitredescles')
@@ -17,9 +17,8 @@ test('test signature domaines', async () => {
     console.debug("Test signature domaines")
     const signature = new SignatureDomaines(["domaine1"])
 
-    const peerPrive = CLE_1,
-          cleSecrete = CLE_2
-    await signature.signerEd25519(peerPrive, cleSecrete)
+    const cleSecrete = CLE_2
+    await signature.signerEd25519("", cleSecrete)
 
     console.debug("Signature %O", signature)
 
@@ -33,9 +32,8 @@ test('test get cle ref', async () => {
     console.debug("Test signature domaines")
     const signature = new SignatureDomaines(["domaine1"])
 
-    const peerPrive = CLE_1,
-          cleSecrete = CLE_2
-    await signature.signerEd25519(peerPrive, cleSecrete)
+    const cleSecrete = CLE_2
+    await signature.signerEd25519("", cleSecrete)
 
     const cleRef = await signature.getCleRef()
     console.debug("Cle ref : %s", cleRef)
@@ -47,14 +45,12 @@ test('test creer commande maitre des cles', async () => {
     console.debug("Test signature domaines")
     const signature = new SignatureDomaines(["domaine1"])
 
-    const peerPrive = CLE_1,
-          cleSecrete = CLE_2
-    await signature.signerEd25519(peerPrive, cleSecrete)
+    const cleSecrete = CLE_2
+    await signature.signerEd25519("", cleSecrete)
   
     // Generer cle publique pour rechiffrage (simuler un certificat de maitre des cles)
     const clePrivee3Ed25519 = CLE_3,
           clePublique3Ed25519 = publicKeyFromPrivateKey(clePrivee3Ed25519)
-          // clePublique3X25519 = convertirPublicEd25519VersX25519(clePublique3Ed25519)
     console.debug("ClePublique3 Ed25519 ", clePublique3Ed25519)
     const clePubliqueEd25519Hex = Buffer.from(clePublique3Ed25519.publicKeyBytes).toString('hex')
   

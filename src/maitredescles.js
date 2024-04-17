@@ -1,7 +1,6 @@
 // Utilitaires pour le maitre des cles
 const multibase = require('multibase')
 const { ed25519 } = require('@dugrema/node-forge')
-const { convertPublicKey } = require('ed2curve')
 const { calculerDigest } = require('./hachage')
 const { publicKeyFromPrivateKey } = require('./certificats')
 const { genererCleSecrete: genererCleSecreteEd25519, chiffrerCle, dechiffrerCle, deriverCleSecrete } = require('./chiffrage.ed25519')
@@ -39,19 +38,23 @@ class SignatureDomaines {
     /**
      * Genere une nouvelle signature de domaines a utiliser avec une commande de sauvegarde de cle.
      * 
-     * @param {Uint8Array} peerPrive Bytes d'une cle privee utilisee pour un exchange x25519 avec le CA.
+     * @param {*} peerPublic String/Buffer d'une cle publique X25519 utilisee pour un exchange avec le CA.
      * @param {Uint8Array} cleSecrete Bytes d'une cle secrete
      */
-    async signerEd25519(peerPrive, cleSecrete) {
+    async signerEd25519(peerPublic, cleSecrete) {
         // Effectuer la signature en utilisant la cle secrete
         this.signature = await signerDomaines(this.domaines, cleSecrete)
         
-        // Calculer la version publique du peer et convertir en X25519. Conserver en base64.
-        const clePubliqueCa = publicKeyFromPrivateKey(peerPrive)
-        const cleChiffreeX25519Bytes = convertPublicKey(clePubliqueCa.publicKeyBytes)
-        this.peer_ca = String.fromCharCode
-            .apply(null, multibase.encode('base64', cleChiffreeX25519Bytes))
-            .slice(1)  // Retirer le 'm' d'encodage multibase
+        if(typeof(peerPublic) === 'string') {
+            this.peer_ca = peerPublic
+        } else if(ArrayBuffer.isView(peerPublic)) {
+            // Conserver le peerPublic en base64 no pad.
+            this.peer_ca = String.fromCharCode
+                .apply(null, multibase.encode('base64', peerPublic))
+                .slice(1)  // Retirer le 'm' d'encodage multibase
+        } else {
+            throw new Error("Mauvais format pour peerPublic, doit etre Uint8Array ou string en base64 no pad")
+        }
     }
 
     /**
@@ -68,6 +71,10 @@ class SignatureDomaines {
         if(!resultat) throw new Error("Signature invalide")
     }
 
+    /**
+     * Valeur unique qui peut etre utilisee comme identite pour cette cle.
+     * @returns {string} Hachage de la signature en blake2s.
+     */
     async getCleRef() {
         if(!this.signature) throw new Error("Signature absente")
         const hachageBytes = multibase.decode('m'+this.signature)
@@ -189,14 +196,16 @@ async function creerCommandeAjouterCle(signature, cleSecrete, clesPubliques) {
 
 async function genererCleSecrete(clePublique, opts) {
     opts = opts || {}
-    let resultat = await genererCleSecreteEd25519(clePublique, {...opts, returnPeer: true})
-    const { privateKey, cle, peer } = resultat
+    let resultat = await genererCleSecreteEd25519(clePublique, opts)
+    const { cle, peer } = resultat
+
+    const peerBase64NoPad = peer.slice(1)  // Retirer le 'm' multibase
 
     resultat = {cle}
 
     if(opts.domaines) {
         const signature = new SignatureDomaines(opts.domaines)
-        await signature.signerEd25519(privateKey.privateKeyBytes, cle)
+        await signature.signerEd25519(peerBase64NoPad, cle)
         resultat.signature = signature
     } else {
         resultat.peer = peer
