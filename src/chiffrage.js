@@ -514,12 +514,30 @@ async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsCh
   return resultat
 }
 
+function convertirChampsV1ToV2(champs) {
+  if(champs.header) {
+    return {
+      // Retirer 'm' multibase
+      data_chiffre: champs.data_chiffre.slice(1),  
+      nonce: champs.header.slice(1),  
+
+      // Renommer
+      verification: null,
+
+      // Transferer valeurs
+      format: champs.format,
+    }
+  }
+  return champs  // Rien a faire
+}
+
 async function dechiffrerChampsV2(message, cleSecrete, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
 
-  const bytesCiphertext = base64.decode('m' + message.data_chiffre)
+  message = convertirChampsV1ToV2(message)
 
+  const bytesCiphertext = base64.decode('m' + message.data_chiffre)
   if(message.nonce) message.nonce = multibase.decode('m' + message.nonce)
   if(message.verification) message.verification = multibase.decode('m'+message.verification)
 
