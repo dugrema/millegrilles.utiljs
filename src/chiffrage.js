@@ -478,9 +478,8 @@ async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsCh
   const infoDocumentChiffre = await chiffrer(docString, optsChiffrage)
   const meta = infoDocumentChiffre.meta
 
-  if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
-
   const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
+  if(DEBUG) console.debug("Document chiffre : %O\nCiphertext base64: %s", infoDocumentChiffre, ciphertextString)
   
   const cleSecrete = infoDocumentChiffre.secretKey
 
@@ -539,7 +538,9 @@ async function dechiffrerChampsV2(message, cleSecrete, opts) {
 
   const bytesCiphertext = base64.decode('m' + message.data_chiffre)
   if(message.nonce) message.nonce = multibase.decode('m' + message.nonce)
-  if(message.verification) message.verification = multibase.decode('m'+message.verification)
+  if(message.verification && !message.verification.startsWith('z')) {
+    message.verification = multibase.decode('m'+message.verification)
+  }
 
   const decipher = await preparerDecipher(cleSecrete, message)
 
