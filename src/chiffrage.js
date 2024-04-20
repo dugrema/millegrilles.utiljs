@@ -166,42 +166,34 @@ async function preparerDecipher(key, opts) {
 }
 
 
-async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hachage_bytes, identificateurs_document, opts) {
+async function preparerCommandeMaitrecles(certificatsPem, password, signatureDomaines, opts) {
   opts = opts || {}
-  const DEBUG = opts.DEBUG,
-        format = opts.cipherAlgo || opts.format || 'mgs4', //
-        peerPublic = opts.peer
+  const DEBUG = opts.DEBUG
+        // format = opts.cipherAlgo || opts.format || 'mgs4', //
+        // peerPublic = opts.peer
   // const userId = opts.userId
 
   // hachage_bytes, iv, tag,
 
-  if(DEBUG) console.debug("preparerCommandeMaitrecles PEM !!: %O", certificatsPem)
+  if(DEBUG) console.debug("preparerCommandeMaitrecles PEM : %O, signatureDomaines", certificatsPem, signatureDomaines)
 
   // Verifier elements obligatoires
-  if(typeof(domaine) !== 'string') throw new Error(`Domaine mauvais format ${domaine}`)
-  if(typeof(hachage_bytes) !== 'string') throw new Error(`hachage_bytes mauvais format : ${hachage_bytes}`)
+  if(!signatureDomaines) throw new Error(`preparerCommandeMaitrecles SignatureDomaines manquant`)
 
-  // if(Buffer.isBuffer(iv) || ArrayBuffer.isView(iv)) {
-  //   iv = base64.encode(iv)
-  // } else if(typeof(iv) !== 'string') throw new Error(`iv mauvais format : ${iv}`)
-  // if(Buffer.isBuffer(tag) || ArrayBuffer.isView(tag)) {
-  //   tag = base64.encode(tag)
-  // } else if(typeof(tag) !== 'string') throw new Error(`tag mauvais format : ${tag}`)
+  let signatureDomainesObj = signatureDomaines
+  if(!signatureDomaines.getCleRef) {
+    // Recreer object SignatureDomaines (non transfere si workers)
+    signatureDomainesObj = new SignatureDomaines(signatureDomaines.domaines)
+    signatureDomainesObj.version = signatureDomaines.version
+    signatureDomainesObj.ca = signatureDomaines.ca
+    signatureDomainesObj.signature = signatureDomaines.signature
+  }
 
-  const champsMeta = ['iv', 'nonce', 'tag', 'header']
-  const meta = champsMeta.reduce((acc, champ)=>{
-    let value = opts[champ]
-    if(champ === 'nonce') champ = 'iv'  // Utiliser iv pour la commande
-    if(value) {
-      if(typeof(value) !== 'string') value = base64.encode(value)
-      acc[champ] = value
-    }
-    return acc
-  }, {})
+  const cleId = await signatureDomainesObj.getCleRef()
+  if(DEBUG) console.debug("preparerCommandeMaitrecles Identite cle : %O", cleId)
 
   // Chiffrer le password pour chaque certificat en parametres
   const cles = {}
-  let partition = ''
   if(typeof(certificatsPem) === 'string') certificatsPem = [certificatsPem]
   for(let idx in certificatsPem) {
     const pem = certificatsPem[idx]
@@ -216,31 +208,27 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
     let extensionsCertificat = extraireExtensionsMillegrille(certForge)
     let roles = extensionsCertificat['roles']
     if(certCN.toLowerCase() === 'millegrille') {
-      if(peerPublic) cles[fingerprint] = peerPublic
       // Skip
       continue
     } else if(roles && roles.includes('maitredescles')) {
-      partition = fingerprint
+      // Ok
     } else {
-      if(DEBUG) console.info("Certificat n'as pas le role maitre des cles\nCERT:%O\nEXT:%O", certForge.subject.attributes, extensionsCertificat)
-      throw new Error(`Certificat n'a pas le role 'maitredescles' (cn: ${certCN}, roles: ${roles})`)
+      if(DEBUG) console.info("preparerCommandeMaitrecles Certificat n'as pas le role maitre des cles\nCERT:%O\nEXT:%O", certForge.subject.attributes, extensionsCertificat)
+      throw new Error(`preparerCommandeMaitrecles Certificat n'a pas le role 'maitredescles' (cn: ${certCN}, roles: ${roles})`)
     }
-    // let ou = certForge.subject.getField('OU')
-    // if(ou && ou.value === 'maitrecles') {
-    //   partition = fingerprint
-    // }
 
     var passwordChiffre = null
     passwordChiffre = await chiffrerCleEd25519(password, publicKey)
+    passwordChiffre = passwordChiffre.slice(1)  // Retirer le 'm' multibase
 
-    if(DEBUG) console.debug("Password chiffre pour %s : %s", fingerprint, passwordChiffre)
+    if(DEBUG) console.debug("preparerCommandeMaitrecles Password chiffre pour %s : %s", fingerprint, passwordChiffre)
     cles[fingerprint] = passwordChiffre
   }
 
   // Creer l'identitie de cle (permet de determiner qui a le droit de recevoir un dechiffrage)
   // Signer l'itentite avec la cle secrete - prouve que l'emetteur de cette commande possede la cle secrete
-  const identiteCle = { domaine, identificateurs_document, hachage_bytes }
-  if(DEBUG) console.debug("Identite cle : %O", identiteCle)
+  // const identiteCle = { domaine, identificateurs_document, hachage_bytes }
+  // if(DEBUG) console.debug("Identite cle : %O", identiteCle)
   // // if(userId) identiteCle.user_id = userId
 
   // const clePriveeEd25519 = await hacher(password, {encoding: 'bytes', hashingCode: 'blake2s-256'})
@@ -254,14 +242,10 @@ async function preparerCommandeMaitrecles(certificatsPem, password, domaine, hac
   if(DEBUG) console.debug("Info password chiffres par fingerprint : %O", cles)
   var commandeMaitrecles = {
     // Information d'identification signee par cle (preuve de possession de cle secrete)
-    ...identiteCle,
-    // signature_identite: signatureIdentiteCle,
+    signature: signatureDomaines,
 
-    // Information de dechiffrage
-    format,
-    ...meta,  // nonce, iv, tag, header, etc.
+    // Cle chiffrees pour chaque maitre des cles connus
     cles, 
-    _partition: partition
   }
 
   return commandeMaitrecles
@@ -591,9 +575,12 @@ async function updateChampsChiffres(docChamps, secretKey, opts) {
   if(DEBUG) console.debug("updateChampsChiffres Document chiffre ", infoDocumentChiffre)
   const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
 
+  let nonce = infoDocumentChiffre.nonce || infoDocumentChiffre.iv || infoDocumentChiffre.header
+  nonce = nonce.slice(1)  // Retirer 'm' multibase
+
   const champsChiffres = {
-    data_chiffre: ciphertextString, 
-    nonce: infoDocumentChiffre.nonce || infoDocumentChiffre.iv || infoDocumentChiffre.header,
+    data_chiffre: ciphertextString.slice(1),  // Retirer 'm' multibase
+    nonce,
     format: infoDocumentChiffre.format
   }
   if(ref_hachage_bytes) champsChiffres.ref_hachage_bytes = ref_hachage_bytes
