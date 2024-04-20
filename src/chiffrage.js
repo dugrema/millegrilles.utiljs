@@ -554,18 +554,19 @@ async function dechiffrerChampsV2(message, cleSecrete, opts) {
   return JSON.parse(messageJson)
 }
 
-async function updateChampsChiffres(docChamps, secretKey, opts) {
+async function updateChampsChiffres(docChamps, secretKey, cle_id, opts) {
   opts = opts || {}
   const DEBUG = opts.DEBUG
+  if(typeof(cle_id) !== 'string') throw new Error("cle_id requis")
   const cipherAlgo = opts.cipherAlgo || opts.format || 'mgs4',
-        digestAlgo = opts.digestAlgo || 'blake2b-512',
-        ref_hachage_bytes = opts.ref_hachage_bytes
+        digestAlgo = opts.digestAlgo || 'blake2b-512'
+        // ref_hachage_bytes = opts.ref_hachage_bytes
   
   if(DEBUG) console.debug("updateChampsChiffres Chiffrer document %O\nopts: %O", docChamps, opts)
 
   let docBytes = new TextEncoder().encode(stringify(docChamps).normalize())
-  if(opts.lzma) {
-    docBytes = pako.deflate(docBytes, {gzip: true})
+  if(opts.gzip) {
+    docBytes = pako.gzip(docBytes, {gzip: true})
   }
 
   // Chiffrer
@@ -581,9 +582,10 @@ async function updateChampsChiffres(docChamps, secretKey, opts) {
   const champsChiffres = {
     data_chiffre: ciphertextString.slice(1),  // Retirer 'm' multibase
     nonce,
-    format: infoDocumentChiffre.format
+    format: infoDocumentChiffre.format,
+    cle_id: cle_id,
   }
-  if(ref_hachage_bytes) champsChiffres.ref_hachage_bytes = ref_hachage_bytes
+  // if(ref_hachage_bytes) champsChiffres.ref_hachage_bytes = ref_hachage_bytes
 
   return champsChiffres
 }
