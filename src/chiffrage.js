@@ -452,8 +452,7 @@ async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsCh
 
   // Options de compression
   if(opts.gzip) {
-    throw new Error("to do")
-    //docString = pako.gzip(docString)
+    docString = pako.gzip(docString)
   }
 
   const optsChiffrage = {...opts}
@@ -566,7 +565,7 @@ async function updateChampsChiffres(docChamps, secretKey, cle_id, opts) {
 
   let docBytes = new TextEncoder().encode(stringify(docChamps).normalize())
   if(opts.gzip) {
-    docBytes = pako.gzip(docBytes, {gzip: true})
+    docBytes = pako.gzip(docBytes)
   }
 
   // Chiffrer
