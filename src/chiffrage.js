@@ -310,128 +310,128 @@ async function preparerCommandeAjouterCleDomaines(certificatsPem, clePeerCa, cle
   return { cles, signature }
 }
 
-async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, identificateurs_document, opts) {
-  opts = opts || {}
-  const DEBUG = opts.DEBUG
+// async function chiffrerDocument(docChamps, domaine, certificatChiffragePem, identificateurs_document, opts) {
+//   opts = opts || {}
+//   const DEBUG = opts.DEBUG
 
-  if(DEBUG) console.debug("Chiffrer document %O\nopts: %O\nIdentificateurs_document: %O", docChamps, opts, identificateurs_document)
-  // if(DEBUG) console.debug("Verification du certificat pour chiffrer la cle")
-  // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
+//   if(DEBUG) console.debug("Chiffrer document %O\nopts: %O\nIdentificateurs_document: %O", docChamps, opts, identificateurs_document)
+//   // if(DEBUG) console.debug("Verification du certificat pour chiffrer la cle")
+//   // const {publicKey: clePublique, fingerprint} = await _getPublicKeyFromCertificat(certificatChiffragePem, opts)
 
-  var docString = opts.nojson?docChamps:stringify(docChamps).normalize()  // string
-  const typeBuffer = opts.type || 'utf-8'
-  if(typeBuffer == 'binary') {
-    // Rien a faire
-  } else if(typeof(TextEncoder) !== 'undefined') {
-    docString = new TextEncoder().encode(docString)  // buffer
-  } else {
-    docString = Buffer.from(docString, typeBuffer)
-  }
+//   var docString = opts.nojson?docChamps:stringify(docChamps).normalize()  // string
+//   const typeBuffer = opts.type || 'utf-8'
+//   if(typeBuffer == 'binary') {
+//     // Rien a faire
+//   } else if(typeof(TextEncoder) !== 'undefined') {
+//     docString = new TextEncoder().encode(docString)  // buffer
+//   } else {
+//     docString = Buffer.from(docString, typeBuffer)
+//   }
 
-  if(opts.lzma) {
-    docString = pako.deflate(docString, {gzip: true})
-  }
+//   if(opts.lzma) {
+//     docString = pako.deflate(docString, {gzip: true})
+//   }
 
-  const certForge = forgePki.certificateFromPem(certificatChiffragePem)
-  const fingerprintCert = await hacherCertificat(certForge)
-  const clePublique = certForge.publicKey
-  const optsChiffrage = {...opts}
-  if(!opts.clePubliqueEd25519 && clePublique.keyType === '1.3.101.112') {
-    // Format EdDSA25519
-    optsChiffrage.clePubliqueEd25519 = clePublique.publicKeyBytes
-    if(DEBUG) console.debug("Cle publique Ed25519, opts : %O", optsChiffrage)
-  }
+//   const certForge = forgePki.certificateFromPem(certificatChiffragePem)
+//   const fingerprintCert = await hacherCertificat(certForge)
+//   const clePublique = certForge.publicKey
+//   const optsChiffrage = {...opts}
+//   if(!opts.clePubliqueEd25519 && clePublique.keyType === '1.3.101.112') {
+//     // Format EdDSA25519
+//     optsChiffrage.clePubliqueEd25519 = clePublique.publicKeyBytes
+//     if(DEBUG) console.debug("Cle publique Ed25519, opts : %O", optsChiffrage)
+//   }
 
-  const infoDocumentChiffre = await chiffrer(docString, optsChiffrage)
-  const meta = infoDocumentChiffre.meta
+//   const infoDocumentChiffre = await chiffrer(docString, optsChiffrage)
+//   const meta = infoDocumentChiffre.meta
 
-  if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
+//   if(DEBUG) console.debug("Document chiffre : %O", infoDocumentChiffre)
 
-  const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
+//   const ciphertextString = base64.encode(infoDocumentChiffre.ciphertext)
   
-  const cleSecrete = infoDocumentChiffre.secretKey
+//   const cleSecrete = infoDocumentChiffre.secretKey
 
-  const certificatsAdditionnels = opts.certificats || []
-  const certificatsChiffrage = [certificatChiffragePem, ...certificatsAdditionnels]
-  if(DEBUG) console.debug("Certificats chiffrage : %O", certificatsChiffrage)
-  const commandeMaitrecles = await preparerCommandeMaitrecles(
-    certificatsChiffrage, cleSecrete, domaine, meta.hachage_bytes, 
-    identificateurs_document,
-    {...opts, ...meta}
-  )
+//   const certificatsAdditionnels = opts.certificats || []
+//   const certificatsChiffrage = [certificatChiffragePem, ...certificatsAdditionnels]
+//   if(DEBUG) console.debug("Certificats chiffrage : %O", certificatsChiffrage)
+//   const commandeMaitrecles = await preparerCommandeMaitrecles(
+//     certificatsChiffrage, cleSecrete, domaine, meta.hachage_bytes, 
+//     identificateurs_document,
+//     {...opts, ...meta}
+//   )
 
-  // Override cle secrete chiffree pour certificat avec secret pour rederiver la cle (plus court)
-  if(infoDocumentChiffre.secretChiffre) {
-    const clesChiffrees = commandeMaitrecles.cles
-    clesChiffrees[fingerprintCert] = infoDocumentChiffre.secretChiffre
-  }
+//   // Override cle secrete chiffree pour certificat avec secret pour rederiver la cle (plus court)
+//   if(infoDocumentChiffre.secretChiffre) {
+//     const clesChiffrees = commandeMaitrecles.cles
+//     clesChiffrees[fingerprintCert] = infoDocumentChiffre.secretChiffre
+//   }
 
-  const docChiffre = {
-    data_chiffre: ciphertextString, 
-    header: infoDocumentChiffre.header, 
-    format: infoDocumentChiffre.format, 
-    ref_hachage_bytes: commandeMaitrecles.hachage_bytes,
-  }
+//   const docChiffre = {
+//     data_chiffre: ciphertextString, 
+//     header: infoDocumentChiffre.header, 
+//     format: infoDocumentChiffre.format, 
+//     ref_hachage_bytes: commandeMaitrecles.hachage_bytes,
+//   }
 
-  const resultat = {doc: docChiffre, commandeMaitrecles}
-  if(opts.retourSecret === true) resultat.cleSecrete = cleSecrete
-  return resultat
-}
+//   const resultat = {doc: docChiffre, commandeMaitrecles}
+//   if(opts.retourSecret === true) resultat.cleSecrete = cleSecrete
+//   return resultat
+// }
 
-async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
-  opts = opts || {}
-  const DEBUG = opts.DEBUG
+// async function dechiffrerDocument(ciphertext, messageCle, clePrivee, opts) {
+//   opts = opts || {}
+//   const DEBUG = opts.DEBUG
 
-  if(typeof(ciphertext) === 'string') {
-    // Assumer format multibase
-    ciphertext = multibase.decode(ciphertext)
-  }
-  const {iv, nonce, tag, cle: passwordChiffre, format} = messageCle
+//   if(typeof(ciphertext) === 'string') {
+//     // Assumer format multibase
+//     ciphertext = multibase.decode(ciphertext)
+//   }
+//   const {iv, nonce, tag, cle: passwordChiffre, format} = messageCle
 
-  if(DEBUG) console.debug(`Dechiffrer message format ${format} avec iv: ${iv}, tag: ${tag}\nmessage: %O`, ciphertext)
+//   if(DEBUG) console.debug(`Dechiffrer message format ${format} avec iv: ${iv}, tag: ${tag}\nmessage: %O`, ciphertext)
 
-  // Dechiffrer le password a partir de la cle chiffree
-  var password = null
-  if( Buffer.isBuffer(clePrivee) || ArrayBuffer.isView(clePrivee) ) {
-    password = await dechiffrerCleEd25519(messageCle.cle, clePrivee, opts)
-  } else {
-    throw new Error("Format de la cle privee de dechiffrage inconnu")
-  }
+//   // Dechiffrer le password a partir de la cle chiffree
+//   var password = null
+//   if( Buffer.isBuffer(clePrivee) || ArrayBuffer.isView(clePrivee) ) {
+//     password = await dechiffrerCleEd25519(messageCle.cle, clePrivee, opts)
+//   } else {
+//     throw new Error("Format de la cle privee de dechiffrage inconnu")
+//   }
 
-  if(DEBUG) console.debug("Password dechiffre : %O, iv: %s, tag: %s", password, iv, tag)
+//   if(DEBUG) console.debug("Password dechiffre : %O, iv: %s, tag: %s", password, iv, tag)
 
-  var contenuDocument = null
-  if(getCipher(format)) {
-    var documentString = await dechiffrer(password, ciphertext, {...opts, format, nonce: nonce||iv, tag})
-    if(opts.unzip) {
-      documentString = await new Promise((resolve, reject)=>{
-        throw new Error('fix me')
-        // unzip(documentString, (err, buffer)=>{
-        //   if(err) reject(err)
-        //   resolve(buffer)
-        // })
-      })
-    }
-    if(opts.lzma) {
-      // Decompresser
-      documentString = pako.inflate(documentString).buffer
-    }    
-    if(typeof(TextDecoder) !== 'undefined') {
-      documentString = new TextDecoder().decode(documentString)  // buffer
-    } else {
-      documentString = forgeUtil.decodeUtf8(documentString)
-    }
-    if(!opts.nojson) {
-      contenuDocument = JSON.parse(documentString)
-    } else {
-      contenuDocument = documentString
-    }
-  } else {
-    throw new Error(`Format dechiffrage ${format} non supporte`)
-  }
+//   var contenuDocument = null
+//   if(getCipher(format)) {
+//     var documentString = await dechiffrer(password, ciphertext, {...opts, format, nonce: nonce||iv, tag})
+//     if(opts.unzip) {
+//       documentString = await new Promise((resolve, reject)=>{
+//         throw new Error('fix me')
+//         // unzip(documentString, (err, buffer)=>{
+//         //   if(err) reject(err)
+//         //   resolve(buffer)
+//         // })
+//       })
+//     }
+//     if(opts.lzma) {
+//       // Decompresser
+//       documentString = pako.inflate(documentString).buffer
+//     }    
+//     if(typeof(TextDecoder) !== 'undefined') {
+//       documentString = new TextDecoder().decode(documentString)  // buffer
+//     } else {
+//       documentString = forgeUtil.decodeUtf8(documentString)
+//     }
+//     if(!opts.nojson) {
+//       contenuDocument = JSON.parse(documentString)
+//     } else {
+//       contenuDocument = documentString
+//     }
+//   } else {
+//     throw new Error(`Format dechiffrage ${format} non supporte`)
+//   }
 
-  return contenuDocument
-}
+//   return contenuDocument
+// }
 
 async function chiffrerChampsV2(docChamps, domaine, clePubliqueCa, certificatsChiffragePem, opts) {
   opts = opts || {}
@@ -634,39 +634,38 @@ function concatArrays(array1, array2) {
   return arrayOut
 }
 
-async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
-  /* Permet de dechiffrer un ciphertext avec un minimum d'information. */
-  opts = opts || {}
-  const permission = opts.permission
+// async function dechiffrerDocumentAvecMq(mq, ciphertext, opts) {
+//   /* Permet de dechiffrer un ciphertext avec un minimum d'information. */
+//   opts = opts || {}
+//   const permission = opts.permission
 
-  // Calculer hachage_bytes du ciphertext
-  const ciphertextBytes = multibase.decode(ciphertext)
-  const hachage_bytes = await hacher(ciphertextBytes, {encoding: 'base58btc'})
+//   // Calculer hachage_bytes du ciphertext
+//   const ciphertextBytes = multibase.decode(ciphertext)
+//   const hachage_bytes = await hacher(ciphertextBytes, {encoding: 'base58btc'})
 
-  // Executer requete pour recuperer cle de dechiffrage
-  const requeteCle = {
-    liste_hachage_bytes: [hachage_bytes],
-    permission,
-  }
-  const domaineActionCle = 'MaitreDesCles.dechiffrage'
-  const reponseDemandeCle = await mq.transmettreRequete(
-    domaineActionCle, requeteCle, {attacherCertificat: true})
+//   // Executer requete pour recuperer cle de dechiffrage
+//   const requeteCle = {
+//     liste_hachage_bytes: [hachage_bytes],
+//     permission,
+//   }
+//   const domaineActionCle = 'MaitreDesCles.dechiffrage'
+//   const reponseDemandeCle = await mq.transmettreRequete(
+//     domaineActionCle, requeteCle, {attacherCertificat: true})
 
-  // Dechiffrer le ciphertext
-  const infoCleRechiffree = reponseDemandeCle.cles[hachage_bytes]
-  const secretContent = await dechiffrerDocument(
-    ciphertextBytes, infoCleRechiffree, mq.pki.cleForge, opts)
+//   // Dechiffrer le ciphertext
+//   const infoCleRechiffree = reponseDemandeCle.cles[hachage_bytes]
+//   const secretContent = await dechiffrerDocument(
+//     ciphertextBytes, infoCleRechiffree, mq.pki.cleForge, opts)
 
-  return secretContent
-}
+//   return secretContent
+// }
 
 module.exports = {
   chiffrer, dechiffrer, preparerCipher, preparerDecipher, preparerCommandeMaitrecles, 
-  chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
   updateChampsChiffres, dechiffrerChampsChiffres,
   
   chiffrerChampsV2, dechiffrerChampsV2, preparerCommandeAjouterCleDomaines,
 
   // Obsolete
-  // signerIdentiteCle, 
+  // signerIdentiteCle, chiffrerDocument, dechiffrerDocument, dechiffrerDocumentAvecMq,
 }
